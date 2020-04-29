@@ -3,6 +3,7 @@ module github.com/dilshat/scriptable-bot
 go 1.13
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.4.1
 	github.com/ReneKroon/ttlcache v1.6.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/h2non/filetype v1.0.12
@@ -13,5 +14,6 @@ require (
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/yanzay/tbot/v2 v2.1.0
+	gopkg.in/go-playground/assert.v1 v1.2.1
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 )

@@ -8,11 +8,13 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/ReneKroon/ttlcache"
 	"github.com/dilshat/scriptable-bot/mocks"
 	"github.com/robertkrimen/otto"
 	"github.com/stretchr/testify/mock"
 	"github.com/yanzay/tbot/v2"
+	"gopkg.in/go-playground/assert.v1"
 )
 
 var (
@@ -421,6 +423,49 @@ func TestSendMessage(t *testing.T) {
 
 	if len(telebot.Calls) != 0 {
 		t.Errorf("Expected 0 but got %d calls", len(telebot.Calls))
+	}
+
+}
+
+func TestExecDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	a := &application{dbClient: db, useDB: true}
+
+	mock.ExpectExec("update table set status=1").WillReturnError(err)
+
+	a.ExecDB("update table set status=1")
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
+	}
+}
+
+func TestQueryDB(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+	}
+	defer db.Close()
+
+	a := &application{dbClient: db, useDB: true}
+
+	rows := sqlmock.NewRows([]string{"id", "name"}).
+		AddRow(1, "tom").
+		AddRow(2, "jerry")
+
+	mock.ExpectQuery("select id, name from user").WillReturnRows(rows)
+
+	res := a.QueryDB("select id, name from user")
+
+	assert.Equal(t, 2, len(res))
+
+	if err = mock.ExpectationsWereMet(); err != nil {
+		t.Errorf("there were unfulfilled expectations: %s", err)
 	}
 
 }
