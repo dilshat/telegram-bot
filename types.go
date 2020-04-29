@@ -3,18 +3,22 @@ package main
 import (
 	"net/url"
 
+	"database/sql"
+
 	"github.com/ReneKroon/ttlcache"
 	"github.com/robertkrimen/otto"
 	"github.com/yanzay/tbot/v2"
 )
 
 type application struct {
-	client         Telebot
+	tgClient       Telebot
 	cache          *ttlcache.Cache
 	attachmentsDir string
 	logicScript    string
 	token          string
 	vmFactory      VmFactory
+	dbClient       *sql.DB
+	useDB          bool
 }
 
 type Vm interface {

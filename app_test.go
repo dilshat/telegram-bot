@@ -61,7 +61,7 @@ func TestGetFileLink(t *testing.T) {
 	filePath := "path"
 	fileInfo := &tbot.File{FilePath: filePath}
 	telebot.On("GetFileInfo", fileID).Return(fileInfo, nil)
-	a := &application{client: telebot}
+	a := &application{tgClient: telebot}
 
 	a.getFileLink(fileID)
 
@@ -73,7 +73,7 @@ func TestGetFileLink(t *testing.T) {
 	filePath = "path"
 	fileInfo = &tbot.File{FilePath: filePath}
 	telebot.On("GetFileInfo", fileID).Return(fileInfo, err)
-	a = &application{client: telebot}
+	a = &application{tgClient: telebot}
 
 	link := a.getFileLink(fileID)
 
@@ -110,7 +110,7 @@ func TestCallbackHandler(t *testing.T) {
 
 	telebot.On("AnswerCallback", callbackID).Return(err)
 
-	a := &application{vmFactory: vmFactory, client: telebot}
+	a := &application{vmFactory: vmFactory, tgClient: telebot}
 
 	a.callbackHandler(&tbot.CallbackQuery{ID: callbackID, Message: &tbot.Message{}})
 
@@ -123,7 +123,7 @@ func TestReplaceInlineOptions(t *testing.T) {
 
 	telebot.On("EditInlineMarkup", chatID, msgID, mock.Anything).Return(err)
 
-	a := &application{client: telebot}
+	a := &application{tgClient: telebot}
 	inlineOptions := []map[string]interface{}{}
 
 	a.replaceInlineOptions(chatID, msgID, inlineOptions)
@@ -223,7 +223,7 @@ func TestPromptUser(t *testing.T) {
 
 	for attachment, method := range testCases {
 		telebot := &mocks.Telebot{}
-		a := &application{client: telebot, attachmentsDir: attachmentsDir}
+		a := &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 		telebot.On(method, userID, filepath.Join(attachmentsDir, attachment), text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -237,7 +237,7 @@ func TestPromptUser(t *testing.T) {
 
 	for attachment, method := range testCases {
 		telebot := &mocks.Telebot{}
-		a := &application{client: telebot, attachmentsDir: attachmentsDir}
+		a := &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 		telebot.On(method, userID, strings.Split(attachment, ":")[0], text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -248,7 +248,7 @@ func TestPromptUser(t *testing.T) {
 
 	//send text
 	telebot := &mocks.Telebot{}
-	a := &application{client: telebot, attachmentsDir: attachmentsDir}
+	a := &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 	telebot.On("SendText", userID, text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -258,7 +258,7 @@ func TestPromptUser(t *testing.T) {
 
 	//ignore empty message
 	telebot = &mocks.Telebot{}
-	a = &application{client: telebot, attachmentsDir: attachmentsDir}
+	a = &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 	a.promptUser(userID, "", "")
 
@@ -277,7 +277,7 @@ func TestSendMessage(t *testing.T) {
 
 	for attachment, method := range testCases {
 		telebot := &mocks.Telebot{}
-		a := &application{client: telebot, attachmentsDir: attachmentsDir}
+		a := &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 		telebot.On(method, userID, filepath.Join(attachmentsDir, attachment), text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -291,7 +291,7 @@ func TestSendMessage(t *testing.T) {
 
 	for attachment, method := range testCases {
 		telebot := &mocks.Telebot{}
-		a := &application{client: telebot, attachmentsDir: attachmentsDir}
+		a := &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 		telebot.On(method, userID, filepath.Join(attachmentsDir, attachment), text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -304,7 +304,7 @@ func TestSendMessage(t *testing.T) {
 	testCases = map[string]string{"smile.jpg": "AttachPhoto", "puppy.mp4": "AttachVideo", "music.mp3": "AttachAudio", "document.txt": "AttachFile"}
 	for attachment, method := range testCases {
 		telebot := &mocks.Telebot{}
-		a := &application{client: telebot, attachmentsDir: attachmentsDir}
+		a := &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 		telebot.On(method, userID, filepath.Join(attachmentsDir, attachment), text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -317,7 +317,7 @@ func TestSendMessage(t *testing.T) {
 	testCases = map[string]string{"id:photo": "ForwardPhoto", "id:video": "ForwardVideo", "id:audio": "ForwardAudio", "id:doc": "ForwardFile"}
 	for attachment, method := range testCases {
 		telebot := &mocks.Telebot{}
-		a := &application{client: telebot, attachmentsDir: attachmentsDir}
+		a := &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 		telebot.On(method, userID, strings.Split(attachment, ":")[0], text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -330,7 +330,7 @@ func TestSendMessage(t *testing.T) {
 	testCases = map[string]string{"id:photo": "ForwardPhoto", "id:video": "ForwardVideo", "id:audio": "ForwardAudio", "id:doc": "ForwardFile"}
 	for attachment, method := range testCases {
 		telebot := &mocks.Telebot{}
-		a := &application{client: telebot, attachmentsDir: attachmentsDir}
+		a := &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 		telebot.On(method, userID, strings.Split(attachment, ":")[0], text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -343,7 +343,7 @@ func TestSendMessage(t *testing.T) {
 	testCases = map[string]string{"id:photo": "ForwardPhoto", "id:video": "ForwardVideo", "id:audio": "ForwardAudio", "id:doc": "ForwardFile"}
 	for attachment, method := range testCases {
 		telebot := &mocks.Telebot{}
-		a := &application{client: telebot, attachmentsDir: attachmentsDir}
+		a := &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 		telebot.On(method, userID, strings.Split(attachment, ":")[0], text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -354,7 +354,7 @@ func TestSendMessage(t *testing.T) {
 
 	//file forwarding with generic document and keyboard options
 	telebot := &mocks.Telebot{}
-	a := &application{client: telebot, attachmentsDir: attachmentsDir}
+	a := &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 	telebot.On("ForwardFile", userID, "id", text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -364,7 +364,7 @@ func TestSendMessage(t *testing.T) {
 
 	//file forwarding with generic document and keyboard options
 	telebot = &mocks.Telebot{}
-	a = &application{client: telebot, attachmentsDir: attachmentsDir}
+	a = &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 	telebot.On("ForwardFile", userID, "id", text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -374,7 +374,7 @@ func TestSendMessage(t *testing.T) {
 
 	//file forwarding with generic document and keyboard options
 	telebot = &mocks.Telebot{}
-	a = &application{client: telebot, attachmentsDir: attachmentsDir}
+	a = &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 	telebot.On("ForwardFile", userID, "id", text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -384,7 +384,7 @@ func TestSendMessage(t *testing.T) {
 
 	//send text with keyboard options
 	telebot = &mocks.Telebot{}
-	a = &application{client: telebot, attachmentsDir: attachmentsDir}
+	a = &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 	telebot.On("SendText", userID, text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -394,7 +394,7 @@ func TestSendMessage(t *testing.T) {
 
 	//send text with inline options
 	telebot = &mocks.Telebot{}
-	a = &application{client: telebot, attachmentsDir: attachmentsDir}
+	a = &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 	inlineOptions = []map[string]interface{}{{"a": "http://www.kg"}}
 
 	telebot.On("SendText", userID, text, mock.AnythingOfType("func(url.Values)")).Return(err)
@@ -405,7 +405,7 @@ func TestSendMessage(t *testing.T) {
 
 	//send text
 	telebot = &mocks.Telebot{}
-	a = &application{client: telebot, attachmentsDir: attachmentsDir}
+	a = &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 	telebot.On("SendText", userID, text, mock.AnythingOfType("func(url.Values)")).Return(err)
 
@@ -415,7 +415,7 @@ func TestSendMessage(t *testing.T) {
 
 	//ignore empty message
 	telebot = &mocks.Telebot{}
-	a = &application{client: telebot, attachmentsDir: attachmentsDir}
+	a = &application{tgClient: telebot, attachmentsDir: attachmentsDir}
 
 	a.sendMessage(userID, "", emptyKeyboardOptions, emptyInlineOptions, "")
 

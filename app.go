@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -25,7 +26,7 @@ func (a *application) delCacheItem(key string) {
 }
 
 func (a *application) getFileLink(fileID string) string {
-	file, err := a.client.GetFileInfo(fileID)
+	file, err := a.tgClient.GetFileInfo(fileID)
 	if err != nil {
 		log.Error("Error getting file link ", err)
 		return ""
@@ -38,13 +39,13 @@ func (a *application) messageHandler(m *tbot.Message) {
 }
 
 func (a *application) callbackHandler(cq *tbot.CallbackQuery) {
-	a.client.AnswerCallback(cq.ID)
+	a.tgClient.AnswerCallback(cq.ID)
 
 	a.handleMessage(cq.Message, cq)
 }
 
 func (a *application) replaceInlineOptions(chatID string, msgID int, inlineOptions []map[string]interface{}) {
-	if err := a.client.EditInlineMarkup(chatID, msgID, buildInlineOptions(inlineOptions)); err != nil {
+	if err := a.tgClient.EditInlineMarkup(chatID, msgID, buildInlineOptions(inlineOptions)); err != nil {
 		log.Error("Error replacing inline options ", err)
 	}
 }
@@ -66,6 +67,100 @@ func (a *application) doPOST(aURL string, params map[string]interface{}) string 
 
 	return resp
 }
+func (a *application) QueryDB(query string) []map[string]interface{} {
+	result := []map[string]interface{}{}
+	if a.useDB {
+		rows, err := a.dbClient.Query(query)
+		if err != nil {
+			log.Error("Error querying db ", err)
+			return result
+		}
+		defer rows.Close()
+
+		columnTypes, err := rows.ColumnTypes()
+
+		if err != nil {
+			log.Error("Error querying db ", err)
+			return result
+		}
+
+		count := len(columnTypes)
+
+		for rows.Next() {
+
+			scanArgs := make([]interface{}, count)
+
+			for i, v := range columnTypes {
+
+				switch v.DatabaseTypeName() {
+				case "VARCHAR", "TEXT", "UUID", "TIMESTAMP":
+					scanArgs[i] = new(sql.NullString)
+					break
+				case "BOOL":
+					scanArgs[i] = new(sql.NullBool)
+					break
+				case "INT4":
+					scanArgs[i] = new(sql.NullInt64)
+					break
+				default:
+					scanArgs[i] = new(sql.NullString)
+				}
+			}
+
+			err := rows.Scan(scanArgs...)
+
+			if err != nil {
+				log.Error("Error querying db ", err)
+				return result
+			}
+
+			masterData := map[string]interface{}{}
+
+			for i, v := range columnTypes {
+
+				if z, ok := (scanArgs[i]).(*sql.NullBool); ok {
+					masterData[v.Name()] = z.Bool
+					continue
+				}
+
+				if z, ok := (scanArgs[i]).(*sql.NullString); ok {
+					masterData[v.Name()] = z.String
+					continue
+				}
+
+				if z, ok := (scanArgs[i]).(*sql.NullInt64); ok {
+					masterData[v.Name()] = z.Int64
+					continue
+				}
+
+				if z, ok := (scanArgs[i]).(*sql.NullFloat64); ok {
+					masterData[v.Name()] = z.Float64
+					continue
+				}
+
+				if z, ok := (scanArgs[i]).(*sql.NullInt32); ok {
+					masterData[v.Name()] = z.Int32
+					continue
+				}
+
+				masterData[v.Name()] = scanArgs[i]
+			}
+
+			result = append(result, masterData)
+		}
+
+		// z, err := json.Marshal(finalRows)
+	}
+	return result
+}
+
+func (a *application) ExecDB(query string) {
+	if a.useDB {
+		if _, err := a.dbClient.Exec(query); err != nil {
+			log.Error("Error executing db query ", err)
+		}
+	}
+}
 
 func (a *application) handleMessage(m *tbot.Message, cq *tbot.CallbackQuery) {
 	vm := a.vmFactory.GetVm()
@@ -77,6 +172,10 @@ func (a *application) handleMessage(m *tbot.Message, cq *tbot.CallbackQuery) {
 	vm.Set("doGet", a.getDoGetFunc())
 
 	vm.Set("doPost", a.getDoPostFunc())
+
+	vm.Set("dbQuery", a.getQueryDBFunc())
+
+	vm.Set("dbExec", a.getExecDBFunc())
 
 	vm.Set("replaceOptions", a.getReplaceOptionsFunc())
 
@@ -96,6 +195,28 @@ func (a *application) handleMessage(m *tbot.Message, cq *tbot.CallbackQuery) {
 
 	if err != nil {
 		log.Error("Error executing script ", err)
+	}
+}
+
+func (a *application) getQueryDBFunc() func(call otto.FunctionCall) otto.Value {
+	return func(call otto.FunctionCall) otto.Value {
+		result := otto.Value{}
+
+		if query, err := call.Argument(0).ToString(); err == nil {
+			result, _ = otto.New().ToValue(a.QueryDB(query))
+		}
+
+		return result
+	}
+}
+
+func (a *application) getExecDBFunc() func(call otto.FunctionCall) otto.Value {
+	return func(call otto.FunctionCall) otto.Value {
+		if query, err := call.Argument(0).ToString(); err == nil {
+			a.ExecDB(query)
+		}
+
+		return otto.Value{}
 	}
 }
 
@@ -271,32 +392,32 @@ func (a *application) promptUser(userID string, text string, attachment string) 
 	if hasAttachment {
 		fileType := GetFileType(attachmentFile)
 		if fileType == PHOTO {
-			err = a.client.AttachPhoto(userID, attachmentFile, text, tbot.OptForceReply)
+			err = a.tgClient.AttachPhoto(userID, attachmentFile, text, tbot.OptForceReply)
 		} else if fileType == VIDEO {
-			err = a.client.AttachVideo(userID, attachmentFile, text, tbot.OptForceReply)
+			err = a.tgClient.AttachVideo(userID, attachmentFile, text, tbot.OptForceReply)
 		} else if fileType == AUDIO {
-			err = a.client.AttachAudio(userID, attachmentFile, text, tbot.OptForceReply)
+			err = a.tgClient.AttachAudio(userID, attachmentFile, text, tbot.OptForceReply)
 		} else {
-			err = a.client.AttachFile(userID, attachmentFile, text, tbot.OptForceReply)
+			err = a.tgClient.AttachFile(userID, attachmentFile, text, tbot.OptForceReply)
 		}
 	} else if attachment != "" {
 		fileParts := strings.Split(attachment, ":")
 		if len(fileParts) == 2 {
 			fileType := ParseFileType(fileParts[1])
 			if fileType == PHOTO {
-				err = a.client.ForwardPhoto(userID, fileParts[0], text, tbot.OptForceReply)
+				err = a.tgClient.ForwardPhoto(userID, fileParts[0], text, tbot.OptForceReply)
 			} else if fileType == VIDEO {
-				err = a.client.ForwardVideo(userID, fileParts[0], text, tbot.OptForceReply)
+				err = a.tgClient.ForwardVideo(userID, fileParts[0], text, tbot.OptForceReply)
 			} else if fileType == AUDIO {
-				err = a.client.ForwardAudio(userID, fileParts[0], text, tbot.OptForceReply)
+				err = a.tgClient.ForwardAudio(userID, fileParts[0], text, tbot.OptForceReply)
 			} else {
-				err = a.client.ForwardFile(userID, fileParts[0], text, tbot.OptForceReply)
+				err = a.tgClient.ForwardFile(userID, fileParts[0], text, tbot.OptForceReply)
 			}
 		} else {
-			err = a.client.ForwardFile(userID, attachment, text, tbot.OptForceReply)
+			err = a.tgClient.ForwardFile(userID, attachment, text, tbot.OptForceReply)
 		}
 	} else if strings.TrimSpace(text) != "" {
-		err = a.client.SendText(userID, text, tbot.OptForceReply)
+		err = a.tgClient.SendText(userID, text, tbot.OptForceReply)
 	} else {
 		log.Warn("Ignoring empty response")
 	}
@@ -326,50 +447,50 @@ func (a *application) sendMessage(userID string, text string, options [][]string
 		fileType := GetFileType(attachmentFile)
 		if hasOptions {
 			if fileType == PHOTO {
-				err = a.client.AttachPhoto(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
+				err = a.tgClient.AttachPhoto(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
 					buildReplyOptions(options),
 				))
 			} else if fileType == VIDEO {
-				err = a.client.AttachVideo(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
+				err = a.tgClient.AttachVideo(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
 					buildReplyOptions(options),
 				))
 			} else if fileType == AUDIO {
-				err = a.client.AttachAudio(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
+				err = a.tgClient.AttachAudio(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
 					buildReplyOptions(options),
 				))
 			} else {
-				err = a.client.AttachFile(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
+				err = a.tgClient.AttachFile(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
 					buildReplyOptions(options),
 				))
 			}
 
 		} else if hasInlineOptions {
 			if fileType == PHOTO {
-				err = a.client.AttachPhoto(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
+				err = a.tgClient.AttachPhoto(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
 					buildInlineOptions(inlineOptions),
 				))
 			} else if fileType == VIDEO {
-				err = a.client.AttachVideo(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
+				err = a.tgClient.AttachVideo(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
 					buildInlineOptions(inlineOptions),
 				))
 			} else if fileType == AUDIO {
-				err = a.client.AttachAudio(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
+				err = a.tgClient.AttachAudio(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
 					buildInlineOptions(inlineOptions),
 				))
 			} else {
-				err = a.client.AttachFile(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
+				err = a.tgClient.AttachFile(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
 					buildInlineOptions(inlineOptions),
 				))
 			}
 		} else {
 			if fileType == PHOTO {
-				err = a.client.AttachPhoto(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
+				err = a.tgClient.AttachPhoto(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
 			} else if fileType == VIDEO {
-				err = a.client.AttachVideo(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
+				err = a.tgClient.AttachVideo(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
 			} else if fileType == AUDIO {
-				err = a.client.AttachAudio(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
+				err = a.tgClient.AttachAudio(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
 			} else {
-				err = a.client.AttachFile(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
+				err = a.tgClient.AttachFile(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
 			}
 		}
 	} else if attachment != "" {
@@ -380,67 +501,67 @@ func (a *application) sendMessage(userID string, text string, options [][]string
 			fileType := ParseFileType(fileParts[1])
 			if hasOptions {
 				if fileType == PHOTO {
-					err = a.client.ForwardPhoto(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
+					err = a.tgClient.ForwardPhoto(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
 						buildReplyOptions(options),
 					))
 				} else if fileType == VIDEO {
-					err = a.client.ForwardVideo(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
+					err = a.tgClient.ForwardVideo(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
 						buildReplyOptions(options),
 					))
 				} else if fileType == AUDIO {
-					err = a.client.ForwardAudio(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
+					err = a.tgClient.ForwardAudio(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
 						buildReplyOptions(options),
 					))
 				} else {
-					err = a.client.ForwardFile(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
+					err = a.tgClient.ForwardFile(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
 						buildReplyOptions(options),
 					))
 				}
 			} else if hasInlineOptions {
 				if fileType == PHOTO {
-					err = a.client.ForwardPhoto(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
+					err = a.tgClient.ForwardPhoto(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
 						buildInlineOptions(inlineOptions),
 					))
 				} else if fileType == VIDEO {
-					err = a.client.ForwardVideo(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
+					err = a.tgClient.ForwardVideo(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
 						buildInlineOptions(inlineOptions),
 					))
 				} else if fileType == AUDIO {
-					err = a.client.ForwardAudio(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
+					err = a.tgClient.ForwardAudio(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
 						buildInlineOptions(inlineOptions),
 					))
 				} else {
-					err = a.client.ForwardFile(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
+					err = a.tgClient.ForwardFile(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
 						buildInlineOptions(inlineOptions),
 					))
 				}
 			} else {
 				if fileType == PHOTO {
-					err = a.client.ForwardPhoto(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
+					err = a.tgClient.ForwardPhoto(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
 				} else if fileType == VIDEO {
-					err = a.client.ForwardVideo(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
+					err = a.tgClient.ForwardVideo(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
 				} else if fileType == AUDIO {
-					err = a.client.ForwardAudio(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
+					err = a.tgClient.ForwardAudio(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
 				} else {
-					err = a.client.ForwardFile(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
+					err = a.tgClient.ForwardFile(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
 				}
 			}
 		} else {
 			//send generic document
 			if hasOptions {
-				err = a.client.ForwardFile(userID, attachment, text, tbot.OptReplyKeyboardMarkup(
+				err = a.tgClient.ForwardFile(userID, attachment, text, tbot.OptReplyKeyboardMarkup(
 					buildReplyOptions(options),
 				))
 			} else if hasInlineOptions {
-				err = a.client.ForwardFile(userID, attachment, text, tbot.OptInlineKeyboardMarkup(
+				err = a.tgClient.ForwardFile(userID, attachment, text, tbot.OptInlineKeyboardMarkup(
 					buildInlineOptions(inlineOptions),
 				))
 			} else {
-				err = a.client.ForwardFile(userID, attachment, text, tbot.OptReplyKeyboardRemove)
+				err = a.tgClient.ForwardFile(userID, attachment, text, tbot.OptReplyKeyboardRemove)
 			}
 		}
 	} else if hasOptions {
-		err = a.client.SendText(
+		err = a.tgClient.SendText(
 			userID,
 			text,
 			tbot.OptReplyKeyboardMarkup(
@@ -448,7 +569,7 @@ func (a *application) sendMessage(userID string, text string, options [][]string
 			),
 		)
 	} else if hasInlineOptions {
-		err = a.client.SendText(
+		err = a.tgClient.SendText(
 			userID,
 			text,
 			tbot.OptInlineKeyboardMarkup(
@@ -456,7 +577,7 @@ func (a *application) sendMessage(userID string, text string, options [][]string
 			),
 		)
 	} else if strings.TrimSpace(text) != "" {
-		err = a.client.SendText(userID, text, tbot.OptReplyKeyboardRemove)
+		err = a.tgClient.SendText(userID, text, tbot.OptReplyKeyboardRemove)
 	} else {
 		log.Warn("Ignoring empty response")
 	}
