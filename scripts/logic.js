@@ -35,7 +35,7 @@ ex:
   send("hi Admin", null, null, adminId) - a message to the specified user (telegram id)
 
 ----------
-* getFileLink - retrn linkg to file download by its fileID. It is no recommended to share the link with users, since it contains bot token. Is is supposed to be used by bot admins
+* getFileLink - returns link to file download by its fileID. It is no recommended to share the link with users, since it contains bot token. Is is supposed to be used by bot admins
 
 ex:
   if (message.Photo && message.Photo.length > 0) {
