@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/Dilshat/telegram-bot)](https://goreportcard.com/report/github.com/Dilshat/telegram-bot)
+
 ## A simple javascript telegram bot
 
 Sometimes a simple bot is needed to be built quickly. This bot allows to write logic of bot in javascript. The script can use embedded methods to implement various functionality: sending messages with attachments, custom keyboards and inline options. You can store objects in cache and in database (mysql and postgres are supported). You can code conversational bot using session like approach. See examples in `scripts/*.js`. File `lib.js` is used to store some helper functionality.
