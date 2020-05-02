@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.com/Dilshat/telegram-bot.svg?branch=master)](https://travis-ci.com/Dilshat/telegram-bot)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Dilshat/telegram-bot)](https://goreportcard.com/report/github.com/Dilshat/telegram-bot)
 
 ## A simple javascript telegram bot
