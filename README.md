@@ -4,13 +4,14 @@ Sometimes a simple bot is needed to be built quickly. This bot allows to write l
 
 ### Embedded functions:
 
-`set(key, value)` - puts a json object to cache indexed by key
+**set(key, value)** - puts a json object to cache indexed by key
 ```
 var sess = {step:0}
 set("session", sess)
 ```
 
-`get(key)` - returns a json object from cache by key
+
+**get(key)** - returns a json object from cache by key
 ```
 var sess = get("session")
 if (sess) {
@@ -18,12 +19,14 @@ if (sess) {
 }
 ```
 
-`del(key)` - removes a json object from cache by key
+
+**del(key)** - removes a json object from cache by key
 ```
 del("session")
 ```
 
-`send(...)` - sends a message to user
+
+**send(...)** - sends a message to user
 ```
 send("Hi") // sends a simple text message
 
@@ -40,14 +43,7 @@ send("Forwarded this file", null, "{fileID}") // forwards a file, that is alread
 send("hi Admin", null, null, adminId) // sends a message to the specified user (by telegram id)
 ```
 
-`getFileLink(fileID)` - returns link to file download by its fileID. It is no recommended to share the link with users, since it contains bot token. Is is supposed to be used by bot admins
-```
-if (message.Photo && message.Photo.length > 0) {
-  console.log("Photo received:" + getFileLink(message.Photo[message.Photo.length - 1].FileID))
-}
-```
-
-`send("Test", [{ "One": "option-1", "Two": "option-2", "Three": "option-3" }])` - sends a message with inline keyboard.
+**send("Test", [{ "One": "option-1", "Two": "option-2", "Three": "option-3" }])** - sends a message with inline keyboard.
  When user presses a button, script will have access to a callback object
 
 ```
@@ -62,17 +58,26 @@ if (callback) {
   console.log("Option " + callback.Data + " selected")
 }
 ```
- if button data is a valid URL, clicking the button will not trigger callback but rather attempt to navigate the specified url
+ _if button data is a valid URL, clicking the button will not trigger callback but rather attempt to navigate the specified url_
 
 
-`replaceOptions` - replaces inline keyboard
+**getFileLink(fileID)** - returns link to file download by its fileID. It is no recommended to share the link with users, since it contains bot token. Is is supposed to be used by bot admins
+```
+if (message.Photo && message.Photo.length > 0) {
+  console.log("Photo received:" + getFileLink(message.Photo[message.Photo.length - 1].FileID))
+}
+```
+
+
+**replaceOptions** - replaces inline keyboard
 ```
 if (callback) {
   replaceOptions(message.Chat.ID, message.MessageID, [{ "Three": "option-3", "Four": "option-4" }] )
 }
 ```
 
-`prompt(text, attachment, userId)` - sends message prompting user to reply to it (force reply)
+
+**prompt(text, attachment, userId)** - sends message prompting user to reply to it (force reply)
 ```
 prompt("What is your phone number") 
 
@@ -83,6 +88,8 @@ if (message.ReplyToMessage) {
   console.log(message.ReplyToMessage.Text + " -> " + message.Text)
 }
 ```
+
+
 
 ### How to use:
 
