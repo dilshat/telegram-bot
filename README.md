@@ -97,5 +97,5 @@ if (message.ReplyToMessage) {
 ### How to use:
 
 + In file `.env` set TELEGRAM_TOKEN to your bot token
-+ Implement bot logic in `attacments/logic.js`. It contains an example script to be used as reference
++ Implement bot logic in `scripts/logic.js`. It contains an example script to be used as a reference
 + Build bot `go build` and run `./scriptable-bot`
