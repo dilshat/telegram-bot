@@ -52,16 +52,16 @@ func (v VmFactoryImpl) GetVm() Vm {
 type Telebot interface {
 	GetFileInfo(fileID string) (*tbot.File, error)
 	AnswerCallback(callbackQueryID string) error
-	EditInlineMarkup(chatID string, messageID int, markup *tbot.InlineKeyboardMarkup) error
-	AttachPhoto(chatID string, filename string, text string, option func(r url.Values)) error
-	AttachVideo(chatID string, filename string, text string, option func(r url.Values)) error
-	AttachAudio(chatID string, filename string, text string, option func(r url.Values)) error
-	AttachFile(chatID string, filename string, text string, option func(r url.Values)) error
-	ForwardPhoto(chatID string, fileID string, text string, option func(r url.Values)) error
-	ForwardVideo(chatID string, fileID string, text string, option func(r url.Values)) error
-	ForwardAudio(chatID string, fileID string, text string, option func(r url.Values)) error
-	ForwardFile(chatID string, fileID string, text string, option func(r url.Values)) error
-	SendText(chatID string, text string, option func(r url.Values)) error
+	EditInlineMarkup(chatID string, messageID int, markup *tbot.InlineKeyboardMarkup) (int, error)
+	AttachPhoto(chatID string, filename string, text string, option func(r url.Values)) (int, error)
+	AttachVideo(chatID string, filename string, text string, option func(r url.Values)) (int, error)
+	AttachAudio(chatID string, filename string, text string, option func(r url.Values)) (int, error)
+	AttachFile(chatID string, filename string, text string, option func(r url.Values)) (int, error)
+	ForwardPhoto(chatID string, fileID string, text string, option func(r url.Values)) (int, error)
+	ForwardVideo(chatID string, fileID string, text string, option func(r url.Values)) (int, error)
+	ForwardAudio(chatID string, fileID string, text string, option func(r url.Values)) (int, error)
+	ForwardFile(chatID string, fileID string, text string, option func(r url.Values)) (int, error)
+	SendText(chatID string, text string, option func(r url.Values)) (int, error)
 }
 
 type TbotWrapper struct {
@@ -76,52 +76,52 @@ func (t *TbotWrapper) GetFileInfo(fileID string) (*tbot.File, error) {
 	return t.GetFile(fileID)
 }
 
-func (t *TbotWrapper) EditInlineMarkup(chatID string, messageID int, markup *tbot.InlineKeyboardMarkup) error {
-	_, err := t.EditMessageReplyMarkup(chatID, messageID, tbot.OptInlineKeyboardMarkup(markup))
-	return err
+func (t *TbotWrapper) EditInlineMarkup(chatID string, messageID int, markup *tbot.InlineKeyboardMarkup) (int, error) {
+	msg, err := t.EditMessageReplyMarkup(chatID, messageID, tbot.OptInlineKeyboardMarkup(markup))
+	return msg.MessageID, err
 }
 
-func (t *TbotWrapper) AttachPhoto(chatID string, filename string, text string, option func(r url.Values)) error {
-	_, err := t.SendPhotoFile(chatID, filename, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
-	return err
+func (t *TbotWrapper) AttachPhoto(chatID string, filename string, text string, option func(r url.Values)) (int, error) {
+	msg, err := t.SendPhotoFile(chatID, filename, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
+	return msg.MessageID, err
 }
 
-func (t *TbotWrapper) AttachVideo(chatID string, filename string, text string, option func(r url.Values)) error {
-	_, err := t.SendVideoFile(chatID, filename, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
-	return err
+func (t *TbotWrapper) AttachVideo(chatID string, filename string, text string, option func(r url.Values)) (int, error) {
+	msg, err := t.SendVideoFile(chatID, filename, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
+	return msg.MessageID, err
 }
 
-func (t *TbotWrapper) AttachAudio(chatID string, filename string, text string, option func(r url.Values)) error {
-	_, err := t.SendAudioFile(chatID, filename, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
-	return err
+func (t *TbotWrapper) AttachAudio(chatID string, filename string, text string, option func(r url.Values)) (int, error) {
+	msg, err := t.SendAudioFile(chatID, filename, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
+	return msg.MessageID, err
 }
 
-func (t *TbotWrapper) AttachFile(chatID string, filename string, text string, option func(r url.Values)) error {
-	_, err := t.SendDocumentFile(chatID, filename, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
-	return err
+func (t *TbotWrapper) AttachFile(chatID string, filename string, text string, option func(r url.Values)) (int, error) {
+	msg, err := t.SendDocumentFile(chatID, filename, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
+	return msg.MessageID, err
 }
 
-func (t *TbotWrapper) ForwardPhoto(chatID string, fileID string, text string, option func(r url.Values)) error {
-	_, err := t.SendPhoto(chatID, fileID, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
-	return err
+func (t *TbotWrapper) ForwardPhoto(chatID string, fileID string, text string, option func(r url.Values)) (int, error) {
+	msg, err := t.SendPhoto(chatID, fileID, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
+	return msg.MessageID, err
 }
 
-func (t *TbotWrapper) ForwardVideo(chatID string, fileID string, text string, option func(r url.Values)) error {
-	_, err := t.SendVideo(chatID, fileID, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
-	return err
+func (t *TbotWrapper) ForwardVideo(chatID string, fileID string, text string, option func(r url.Values)) (int, error) {
+	msg, err := t.SendVideo(chatID, fileID, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
+	return msg.MessageID, err
 }
 
-func (t *TbotWrapper) ForwardAudio(chatID string, fileID string, text string, option func(r url.Values)) error {
-	_, err := t.SendAudio(chatID, fileID, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
-	return err
+func (t *TbotWrapper) ForwardAudio(chatID string, fileID string, text string, option func(r url.Values)) (int, error) {
+	msg, err := t.SendAudio(chatID, fileID, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
+	return msg.MessageID, err
 }
 
-func (t *TbotWrapper) ForwardFile(chatID string, fileID string, text string, option func(r url.Values)) error {
-	_, err := t.SendDocument(chatID, fileID, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
-	return err
+func (t *TbotWrapper) ForwardFile(chatID string, fileID string, text string, option func(r url.Values)) (int, error) {
+	msg, err := t.SendDocument(chatID, fileID, tbot.OptCaption(text), tbot.OptParseModeHTML, option)
+	return msg.MessageID, err
 }
 
-func (t *TbotWrapper) SendText(chatID string, text string, option func(r url.Values)) error {
-	_, err := t.SendMessage(chatID, text, tbot.OptParseModeHTML, option)
-	return err
+func (t *TbotWrapper) SendText(chatID string, text string, option func(r url.Values)) (int, error) {
+	msg, err := t.SendMessage(chatID, text, tbot.OptParseModeHTML, option)
+	return msg.MessageID, err
 }

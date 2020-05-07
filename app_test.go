@@ -123,7 +123,7 @@ func TestCallbackHandler(t *testing.T) {
 func TestReplaceInlineOptions(t *testing.T) {
 	telebot := &mocks.Telebot{}
 
-	telebot.On("EditInlineMarkup", chatID, msgID, mock.Anything).Return(err)
+	telebot.On("EditInlineMarkup", chatID, msgID, mock.Anything).Return(0, err)
 
 	a := &application{tgClient: telebot}
 	inlineOptions := []map[string]interface{}{}

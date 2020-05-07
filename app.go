@@ -44,10 +44,12 @@ func (a *application) callbackHandler(cq *tbot.CallbackQuery) {
 	a.handleMessage(cq.Message, cq)
 }
 
-func (a *application) replaceInlineOptions(chatID string, msgID int, inlineOptions []map[string]interface{}) {
-	if err := a.tgClient.EditInlineMarkup(chatID, msgID, buildInlineOptions(inlineOptions)); err != nil {
+func (a *application) replaceInlineOptions(chatID string, msgID int, inlineOptions []map[string]interface{}) int {
+	id, err := a.tgClient.EditInlineMarkup(chatID, msgID, buildInlineOptions(inlineOptions))
+	if err != nil {
 		log.Error("Error replacing inline options ", err)
 	}
+	return id
 }
 
 func (a *application) doGet(aURL string, params map[string]interface{}) string {
@@ -376,7 +378,7 @@ func (a *application) getSendFunc(userID string) func(call otto.FunctionCall) ot
 	}
 }
 
-func (a *application) promptUser(userID string, text string, attachment string) {
+func (a *application) promptUser(userID string, text string, attachment string) int {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -387,37 +389,38 @@ func (a *application) promptUser(userID string, text string, attachment string) 
 	attachmentFile := filepath.Join(a.attachmentsDir, attachment)
 	hasAttachment := attachment != "" && FileExists(attachmentFile)
 
+	var id int
 	var err error
 
 	if hasAttachment {
 		fileType := GetFileType(attachmentFile)
 		if fileType == PHOTO {
-			err = a.tgClient.AttachPhoto(userID, attachmentFile, text, tbot.OptForceReply)
+			id, err = a.tgClient.AttachPhoto(userID, attachmentFile, text, tbot.OptForceReply)
 		} else if fileType == VIDEO {
-			err = a.tgClient.AttachVideo(userID, attachmentFile, text, tbot.OptForceReply)
+			id, err = a.tgClient.AttachVideo(userID, attachmentFile, text, tbot.OptForceReply)
 		} else if fileType == AUDIO {
-			err = a.tgClient.AttachAudio(userID, attachmentFile, text, tbot.OptForceReply)
+			id, err = a.tgClient.AttachAudio(userID, attachmentFile, text, tbot.OptForceReply)
 		} else {
-			err = a.tgClient.AttachFile(userID, attachmentFile, text, tbot.OptForceReply)
+			id, err = a.tgClient.AttachFile(userID, attachmentFile, text, tbot.OptForceReply)
 		}
 	} else if attachment != "" {
 		fileParts := strings.Split(attachment, ":")
 		if len(fileParts) == 2 {
 			fileType := ParseFileType(fileParts[1])
 			if fileType == PHOTO {
-				err = a.tgClient.ForwardPhoto(userID, fileParts[0], text, tbot.OptForceReply)
+				id, err = a.tgClient.ForwardPhoto(userID, fileParts[0], text, tbot.OptForceReply)
 			} else if fileType == VIDEO {
-				err = a.tgClient.ForwardVideo(userID, fileParts[0], text, tbot.OptForceReply)
+				id, err = a.tgClient.ForwardVideo(userID, fileParts[0], text, tbot.OptForceReply)
 			} else if fileType == AUDIO {
-				err = a.tgClient.ForwardAudio(userID, fileParts[0], text, tbot.OptForceReply)
+				id, err = a.tgClient.ForwardAudio(userID, fileParts[0], text, tbot.OptForceReply)
 			} else {
-				err = a.tgClient.ForwardFile(userID, fileParts[0], text, tbot.OptForceReply)
+				id, err = a.tgClient.ForwardFile(userID, fileParts[0], text, tbot.OptForceReply)
 			}
 		} else {
-			err = a.tgClient.ForwardFile(userID, attachment, text, tbot.OptForceReply)
+			id, err = a.tgClient.ForwardFile(userID, attachment, text, tbot.OptForceReply)
 		}
 	} else if strings.TrimSpace(text) != "" {
-		err = a.tgClient.SendText(userID, text, tbot.OptForceReply)
+		id, err = a.tgClient.SendText(userID, text, tbot.OptForceReply)
 	} else {
 		log.Warn("Ignoring empty response")
 	}
@@ -425,9 +428,11 @@ func (a *application) promptUser(userID string, text string, attachment string) 
 	if err != nil {
 		log.Error("Error prompting user ", err)
 	}
+
+	return id
 }
 
-func (a *application) sendMessage(userID string, text string, options [][]string, inlineOptions []map[string]interface{}, attachment string) {
+func (a *application) sendMessage(userID string, text string, options [][]string, inlineOptions []map[string]interface{}, attachment string) int {
 
 	defer func() {
 		if r := recover(); r != nil {
@@ -440,6 +445,7 @@ func (a *application) sendMessage(userID string, text string, options [][]string
 	hasOptions := len(options) > 0
 	hasInlineOptions := len(inlineOptions) > 0
 
+	var id int
 	var err error
 
 	if hasAttachment {
@@ -447,50 +453,50 @@ func (a *application) sendMessage(userID string, text string, options [][]string
 		fileType := GetFileType(attachmentFile)
 		if hasOptions {
 			if fileType == PHOTO {
-				err = a.tgClient.AttachPhoto(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
+				id, err = a.tgClient.AttachPhoto(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
 					buildReplyOptions(options),
 				))
 			} else if fileType == VIDEO {
-				err = a.tgClient.AttachVideo(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
+				id, err = a.tgClient.AttachVideo(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
 					buildReplyOptions(options),
 				))
 			} else if fileType == AUDIO {
-				err = a.tgClient.AttachAudio(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
+				id, err = a.tgClient.AttachAudio(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
 					buildReplyOptions(options),
 				))
 			} else {
-				err = a.tgClient.AttachFile(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
+				id, err = a.tgClient.AttachFile(userID, attachmentFile, text, tbot.OptReplyKeyboardMarkup(
 					buildReplyOptions(options),
 				))
 			}
 
 		} else if hasInlineOptions {
 			if fileType == PHOTO {
-				err = a.tgClient.AttachPhoto(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
+				id, err = a.tgClient.AttachPhoto(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
 					buildInlineOptions(inlineOptions),
 				))
 			} else if fileType == VIDEO {
-				err = a.tgClient.AttachVideo(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
+				id, err = a.tgClient.AttachVideo(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
 					buildInlineOptions(inlineOptions),
 				))
 			} else if fileType == AUDIO {
-				err = a.tgClient.AttachAudio(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
+				id, err = a.tgClient.AttachAudio(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
 					buildInlineOptions(inlineOptions),
 				))
 			} else {
-				err = a.tgClient.AttachFile(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
+				id, err = a.tgClient.AttachFile(userID, attachmentFile, text, tbot.OptInlineKeyboardMarkup(
 					buildInlineOptions(inlineOptions),
 				))
 			}
 		} else {
 			if fileType == PHOTO {
-				err = a.tgClient.AttachPhoto(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
+				id, err = a.tgClient.AttachPhoto(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
 			} else if fileType == VIDEO {
-				err = a.tgClient.AttachVideo(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
+				id, err = a.tgClient.AttachVideo(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
 			} else if fileType == AUDIO {
-				err = a.tgClient.AttachAudio(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
+				id, err = a.tgClient.AttachAudio(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
 			} else {
-				err = a.tgClient.AttachFile(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
+				id, err = a.tgClient.AttachFile(userID, attachmentFile, text, tbot.OptReplyKeyboardRemove)
 			}
 		}
 	} else if attachment != "" {
@@ -501,67 +507,67 @@ func (a *application) sendMessage(userID string, text string, options [][]string
 			fileType := ParseFileType(fileParts[1])
 			if hasOptions {
 				if fileType == PHOTO {
-					err = a.tgClient.ForwardPhoto(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
+					id, err = a.tgClient.ForwardPhoto(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
 						buildReplyOptions(options),
 					))
 				} else if fileType == VIDEO {
-					err = a.tgClient.ForwardVideo(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
+					id, err = a.tgClient.ForwardVideo(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
 						buildReplyOptions(options),
 					))
 				} else if fileType == AUDIO {
-					err = a.tgClient.ForwardAudio(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
+					id, err = a.tgClient.ForwardAudio(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
 						buildReplyOptions(options),
 					))
 				} else {
-					err = a.tgClient.ForwardFile(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
+					id, err = a.tgClient.ForwardFile(userID, fileParts[0], text, tbot.OptReplyKeyboardMarkup(
 						buildReplyOptions(options),
 					))
 				}
 			} else if hasInlineOptions {
 				if fileType == PHOTO {
-					err = a.tgClient.ForwardPhoto(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
+					id, err = a.tgClient.ForwardPhoto(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
 						buildInlineOptions(inlineOptions),
 					))
 				} else if fileType == VIDEO {
-					err = a.tgClient.ForwardVideo(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
+					id, err = a.tgClient.ForwardVideo(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
 						buildInlineOptions(inlineOptions),
 					))
 				} else if fileType == AUDIO {
-					err = a.tgClient.ForwardAudio(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
+					id, err = a.tgClient.ForwardAudio(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
 						buildInlineOptions(inlineOptions),
 					))
 				} else {
-					err = a.tgClient.ForwardFile(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
+					id, err = a.tgClient.ForwardFile(userID, fileParts[0], text, tbot.OptInlineKeyboardMarkup(
 						buildInlineOptions(inlineOptions),
 					))
 				}
 			} else {
 				if fileType == PHOTO {
-					err = a.tgClient.ForwardPhoto(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
+					id, err = a.tgClient.ForwardPhoto(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
 				} else if fileType == VIDEO {
-					err = a.tgClient.ForwardVideo(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
+					id, err = a.tgClient.ForwardVideo(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
 				} else if fileType == AUDIO {
-					err = a.tgClient.ForwardAudio(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
+					id, err = a.tgClient.ForwardAudio(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
 				} else {
-					err = a.tgClient.ForwardFile(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
+					id, err = a.tgClient.ForwardFile(userID, fileParts[0], text, tbot.OptReplyKeyboardRemove)
 				}
 			}
 		} else {
 			//send generic document
 			if hasOptions {
-				err = a.tgClient.ForwardFile(userID, attachment, text, tbot.OptReplyKeyboardMarkup(
+				id, err = a.tgClient.ForwardFile(userID, attachment, text, tbot.OptReplyKeyboardMarkup(
 					buildReplyOptions(options),
 				))
 			} else if hasInlineOptions {
-				err = a.tgClient.ForwardFile(userID, attachment, text, tbot.OptInlineKeyboardMarkup(
+				id, err = a.tgClient.ForwardFile(userID, attachment, text, tbot.OptInlineKeyboardMarkup(
 					buildInlineOptions(inlineOptions),
 				))
 			} else {
-				err = a.tgClient.ForwardFile(userID, attachment, text, tbot.OptReplyKeyboardRemove)
+				id, err = a.tgClient.ForwardFile(userID, attachment, text, tbot.OptReplyKeyboardRemove)
 			}
 		}
 	} else if hasOptions {
-		err = a.tgClient.SendText(
+		id, err = a.tgClient.SendText(
 			userID,
 			text,
 			tbot.OptReplyKeyboardMarkup(
@@ -569,7 +575,7 @@ func (a *application) sendMessage(userID string, text string, options [][]string
 			),
 		)
 	} else if hasInlineOptions {
-		err = a.tgClient.SendText(
+		id, err = a.tgClient.SendText(
 			userID,
 			text,
 			tbot.OptInlineKeyboardMarkup(
@@ -577,7 +583,7 @@ func (a *application) sendMessage(userID string, text string, options [][]string
 			),
 		)
 	} else if strings.TrimSpace(text) != "" {
-		err = a.tgClient.SendText(userID, text, tbot.OptReplyKeyboardRemove)
+		id, err = a.tgClient.SendText(userID, text, tbot.OptReplyKeyboardRemove)
 	} else {
 		log.Warn("Ignoring empty response")
 	}
@@ -585,6 +591,8 @@ func (a *application) sendMessage(userID string, text string, options [][]string
 	if err != nil {
 		log.Error("Error sending message ", err)
 	}
+
+	return id
 }
 
 func buildReplyOptions(replyOptions [][]string) *tbot.ReplyKeyboardMarkup {
