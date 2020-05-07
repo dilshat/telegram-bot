@@ -52,8 +52,8 @@ func (a *application) replaceInlineOptions(chatID string, msgID int, inlineOptio
 	return id
 }
 
-func (a *application) doGet(aURL string, params map[string]interface{}) string {
-	resp, err := doGET(aURL, params)
+func (a *application) doGet(aURL string, params map[string]interface{}, headers map[string]interface{}) string {
+	resp, err := doGET(aURL, params, headers)
 	if err != nil {
 		log.Error("Error performing GET request ", err)
 	}
@@ -61,8 +61,8 @@ func (a *application) doGet(aURL string, params map[string]interface{}) string {
 	return resp
 }
 
-func (a *application) doPOST(aURL string, params map[string]interface{}) string {
-	resp, err := doPOST(aURL, params)
+func (a *application) doPOST(aURL string, params map[string]interface{}, headers map[string]interface{}) string {
+	resp, err := doPOST(aURL, params, headers)
 	if err != nil {
 		log.Error("Error performing POST request ", err)
 	}
@@ -238,7 +238,11 @@ func (a *application) getDoGetFunc() func(call otto.FunctionCall) otto.Value {
 		if aURL, err := call.Argument(0).ToString(); err == nil {
 			if paramsInterface, err := call.Argument(1).Export(); err == nil {
 				if params, ok := paramsInterface.(map[string]interface{}); ok {
-					result, _ = otto.ToValue(a.doGet(aURL, params))
+					var headers map[string]interface{}
+					if headersInterface, err := call.Argument(2).Export(); err == nil {
+						headers, _ = headersInterface.(map[string]interface{})
+					}
+					result, _ = otto.ToValue(a.doGet(aURL, params, headers))
 				}
 			}
 		}
@@ -254,7 +258,11 @@ func (a *application) getDoPostFunc() func(call otto.FunctionCall) otto.Value {
 		if aURL, err := call.Argument(0).ToString(); err == nil {
 			if paramsInterface, err := call.Argument(1).Export(); err == nil {
 				if params, ok := paramsInterface.(map[string]interface{}); ok {
-					result, _ = otto.ToValue(a.doPOST(aURL, params))
+					var headers map[string]interface{}
+					if headersInterface, err := call.Argument(2).Export(); err == nil {
+						headers, _ = headersInterface.(map[string]interface{})
+					}
+					result, _ = otto.ToValue(a.doPOST(aURL, params, headers))
 				}
 			}
 		}

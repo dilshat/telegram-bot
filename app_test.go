@@ -142,14 +142,14 @@ func TestDoGet(t *testing.T) {
 
 	a := &application{}
 
-	res := a.doGet(server.URL, map[string]interface{}{})
+	res := a.doGet(server.URL, map[string]interface{}{}, map[string]interface{}{})
 
 	if res != "OK" {
 		t.Errorf("Exptected OK but got %s", res)
 	}
 
 	//negaive test
-	res = a.doGet("", map[string]interface{}{})
+	res = a.doGet("", map[string]interface{}{}, map[string]interface{}{})
 
 	if res != "" {
 		t.Errorf("Exptected empty response but got %s", res)
@@ -165,14 +165,14 @@ func TestDoPost(t *testing.T) {
 
 	a := &application{}
 
-	res := a.doPOST(server.URL, map[string]interface{}{})
+	res := a.doPOST(server.URL, map[string]interface{}{}, map[string]interface{}{})
 
 	if res != "OK" {
 		t.Errorf("Exptected OK but got %s", res)
 	}
 
 	//negaive test
-	res = a.doPOST("", map[string]interface{}{})
+	res = a.doPOST("", map[string]interface{}{}, map[string]interface{}{})
 
 	if res != "" {
 		t.Errorf("Exptected empty response but got %s", res)
