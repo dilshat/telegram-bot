@@ -165,11 +165,8 @@ func (a *application) ExecDB(query string) {
 }
 
 func (a *application) handleMessage(m *tbot.Message, cq *tbot.CallbackQuery) {
+
 	vm := a.vmFactory.GetVm()
-
-	vm.Set("callback", cq)
-
-	vm.Set("message", m)
 
 	vm.Set("doGet", a.getDoGetFunc())
 
@@ -179,19 +176,31 @@ func (a *application) handleMessage(m *tbot.Message, cq *tbot.CallbackQuery) {
 
 	vm.Set("dbExec", a.getExecDBFunc())
 
-	vm.Set("replaceOptions", a.getReplaceOptionsFunc())
-
 	vm.Set("getFileLink", a.getGetFileLinkFunc())
 
-	vm.Set("set", a.getSetFunc(m.Chat.ID))
+	vm.Set("replaceOptions", a.getReplaceOptionsFunc())
 
-	vm.Set("get", a.getGetFunc(m.Chat.ID))
+	id := ""
+	if m != nil {
+		id = m.Chat.ID
+		vm.Set("timer", false)
+	} else {
+		vm.Set("timer", true)
+	}
 
-	vm.Set("del", a.getDelFunc(m.Chat.ID))
+	vm.Set("send", a.getSendFunc(id))
 
-	vm.Set("send", a.getSendFunc(m.Chat.ID))
+	vm.Set("prompt", a.getPromptFunc(id))
 
-	vm.Set("prompt", a.getPromptFunc(m.Chat.ID))
+	vm.Set("set", a.getSetFunc(id))
+
+	vm.Set("get", a.getGetFunc(id))
+
+	vm.Set("del", a.getDelFunc(id))
+
+	vm.Set("callback", cq)
+
+	vm.Set("message", m)
 
 	_, err := vm.Run(a.logicScript)
 

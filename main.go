@@ -68,6 +68,22 @@ func main() {
 		useDB:          useDB,
 	}
 
+	//timer function
+	if GetEnv("timer", "") != "" {
+		duration, err := time.ParseDuration(GetEnv("timer", ""))
+		if err != nil {
+			log.Error("Error parsing time duration for timer ", err)
+		} else {
+			ticker := time.NewTicker(duration)
+			defer ticker.Stop()
+			go func() {
+				for range ticker.C {
+					app.handleMessage(nil, nil)
+				}
+			}()
+		}
+	}
+
 	//bind handlers
 	bot.HandleMessage("", app.messageHandler)
 	bot.HandleCallback(app.callbackHandler)
