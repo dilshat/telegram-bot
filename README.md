@@ -79,6 +79,16 @@ if (callback) {
 }
 ```
 
+
+**editMessage** - updates message text and inline keyboard. _Currently it is possible to edit messages with inline keyboard only_
+```
+var id = send("Original message", [{ "One": "option-1", "Two": "option-2", "Three": "option-3" }])
+sleep(1000)
+editMessage(message.Chat.ID, id, "Edited message", [{ "Three": "option-3", "Four": "option-4" }])
+
+```
+
+
 **deleteMessage** - deletes message
 ```
 deleteMessage(message.Chat.ID, message.MessageID)
