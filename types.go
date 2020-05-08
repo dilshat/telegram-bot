@@ -63,6 +63,7 @@ type Telebot interface {
 	ForwardFile(chatID string, fileID string, text string, option func(r url.Values)) (int, error)
 	SendText(chatID string, text string, option func(r url.Values)) (int, error)
 	DeleteMsg(chatID string, messageID int) error
+	EditMsg(chatID string, messageID int, text string, markup *tbot.InlineKeyboardMarkup) error
 }
 
 type TbotWrapper struct {
@@ -79,6 +80,11 @@ func (t *TbotWrapper) GetFileInfo(fileID string) (*tbot.File, error) {
 
 func (t *TbotWrapper) DeleteMsg(chatID string, messageID int) error {
 	return t.DeleteMessage(chatID, messageID)
+}
+
+func (t *TbotWrapper) EditMsg(chatID string, messageID int, text string, markup *tbot.InlineKeyboardMarkup) error {
+	_, err := t.EditMessageText(chatID, messageID, text, tbot.OptParseModeHTML, tbot.OptInlineKeyboardMarkup(markup))
+	return err
 }
 
 func (t *TbotWrapper) EditInlineMarkup(chatID string, messageID int, markup *tbot.InlineKeyboardMarkup) (int, error) {

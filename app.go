@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/labstack/gommon/log"
 	"github.com/robertkrimen/otto"
@@ -56,6 +57,13 @@ func (a *application) deleteMessage(chatID string, msgID int) {
 	err := a.tgClient.DeleteMsg(chatID, msgID)
 	if err != nil {
 		log.Error("Error deleting message ", err)
+	}
+}
+
+func (a *application) editMessage(chatID string, msgID int, text string, inlineOptions []map[string]interface{}) {
+	err := a.tgClient.EditMsg(chatID, msgID, text, buildInlineOptions(inlineOptions))
+	if err != nil {
+		log.Error("Error editing message ", err)
 	}
 }
 
@@ -189,6 +197,10 @@ func (a *application) handleMessage(m *tbot.Message, cq *tbot.CallbackQuery) {
 
 	vm.Set("deleteMessage", a.getDeleteMessageFunc())
 
+	vm.Set("editMessage", a.getEditMessageFunc())
+
+	vm.Set("sleep", a.getSleepFunc())
+
 	id := ""
 	if m != nil {
 		id = m.Chat.ID
@@ -234,6 +246,16 @@ func (a *application) getExecDBFunc() func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
 		if query, err := call.Argument(0).ToString(); err == nil {
 			a.ExecDB(query)
+		}
+
+		return otto.Value{}
+	}
+}
+
+func (a *application) getSleepFunc() func(call otto.FunctionCall) otto.Value {
+	return func(call otto.FunctionCall) otto.Value {
+		if ms, err := call.Argument(0).ToInteger(); err == nil {
+			time.Sleep(time.Duration(ms) * time.Millisecond)
 		}
 
 		return otto.Value{}
@@ -308,6 +330,24 @@ func (a *application) getDeleteMessageFunc() func(call otto.FunctionCall) otto.V
 	}
 }
 
+func (a *application) getEditMessageFunc() func(call otto.FunctionCall) otto.Value {
+	return func(call otto.FunctionCall) otto.Value {
+		if chatID, err := call.Argument(0).ToString(); err == nil {
+			if msgID, err := call.Argument(1).ToInteger(); err == nil {
+				if text, err := call.Argument(2).ToString(); err == nil {
+					if optionsInterface, err := call.Argument(3).Export(); err == nil {
+						if inlineOptions, ok := optionsInterface.([]map[string]interface{}); ok {
+							a.editMessage(chatID, int(msgID), text, inlineOptions)
+						}
+					}
+				}
+			}
+		}
+
+		return otto.Value{}
+	}
+}
+
 func (a *application) getGetFileLinkFunc() func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
 		result := otto.Value{}
@@ -375,9 +415,11 @@ func (a *application) getPromptFunc(userID string) func(call otto.FunctionCall) 
 			targetUser, _ = call.Argument(2).ToString()
 		}
 
-		a.promptUser(targetUser, text, attachment)
+		id := a.promptUser(targetUser, text, attachment)
 
-		return otto.Value{}
+		result, _ := otto.ToValue(id)
+
+		return result
 	}
 }
 
@@ -410,9 +452,11 @@ func (a *application) getSendFunc(userID string) func(call otto.FunctionCall) ot
 			targetUser, _ = call.Argument(3).ToString()
 		}
 
-		a.sendMessage(targetUser, text, options, inlineOptions, attachment)
+		id := a.sendMessage(targetUser, text, options, inlineOptions, attachment)
 
-		return otto.Value{}
+		result, _ := otto.ToValue(id)
+
+		return result
 	}
 }
 

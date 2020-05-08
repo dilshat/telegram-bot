@@ -144,6 +144,20 @@ func (_m *Telebot) EditInlineMarkup(chatID string, messageID int, markup *tbot.I
 	return r0, r1
 }
 
+// EditMsg provides a mock function with given fields: chatID, messageID, text, markup
+func (_m *Telebot) EditMsg(chatID string, messageID int, text string, markup *tbot.InlineKeyboardMarkup) error {
+	ret := _m.Called(chatID, messageID, text, markup)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, int, string, *tbot.InlineKeyboardMarkup) error); ok {
+		r0 = rf(chatID, messageID, text, markup)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // ForwardAudio provides a mock function with given fields: chatID, fileID, text, option
 func (_m *Telebot) ForwardAudio(chatID string, fileID string, text string, option func(url.Values)) (int, error) {
 	ret := _m.Called(chatID, fileID, text, option)
