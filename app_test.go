@@ -133,6 +133,18 @@ func TestReplaceInlineOptions(t *testing.T) {
 	telebot.AssertExpectations(t)
 }
 
+func TestDeleteMsg(t *testing.T) {
+	telebot := &mocks.Telebot{}
+
+	telebot.On("DeleteMsg", chatID, msgID).Return(err)
+
+	a := &application{tgClient: telebot}
+
+	a.deleteMessage(chatID, msgID)
+
+	telebot.AssertExpectations(t)
+}
+
 func TestDoGet(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		rw.Write([]byte("OK"))

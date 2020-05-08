@@ -109,6 +109,20 @@ func (_m *Telebot) AttachVideo(chatID string, filename string, text string, opti
 	return r0, r1
 }
 
+// DeleteMsg provides a mock function with given fields: chatID, messageID
+func (_m *Telebot) DeleteMsg(chatID string, messageID int) error {
+	ret := _m.Called(chatID, messageID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, int) error); ok {
+		r0 = rf(chatID, messageID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // EditInlineMarkup provides a mock function with given fields: chatID, messageID, markup
 func (_m *Telebot) EditInlineMarkup(chatID string, messageID int, markup *tbot.InlineKeyboardMarkup) (int, error) {
 	ret := _m.Called(chatID, messageID, markup)

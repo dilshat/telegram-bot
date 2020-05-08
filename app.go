@@ -52,6 +52,13 @@ func (a *application) replaceInlineOptions(chatID string, msgID int, inlineOptio
 	return id
 }
 
+func (a *application) deleteMessage(chatID string, msgID int) {
+	err := a.tgClient.DeleteMsg(chatID, msgID)
+	if err != nil {
+		log.Error("Error deleting message ", err)
+	}
+}
+
 func (a *application) doGet(aURL string, params map[string]interface{}, headers map[string]interface{}) string {
 	resp, err := doGET(aURL, params, headers)
 	if err != nil {
@@ -180,6 +187,8 @@ func (a *application) handleMessage(m *tbot.Message, cq *tbot.CallbackQuery) {
 
 	vm.Set("replaceOptions", a.getReplaceOptionsFunc())
 
+	vm.Set("deleteMessage", a.getDeleteMessageFunc())
+
 	id := ""
 	if m != nil {
 		id = m.Chat.ID
@@ -280,6 +289,18 @@ func (a *application) getReplaceOptionsFunc() func(call otto.FunctionCall) otto.
 						a.replaceInlineOptions(chatID, int(msgID), inlineOptions)
 					}
 				}
+			}
+		}
+
+		return otto.Value{}
+	}
+}
+
+func (a *application) getDeleteMessageFunc() func(call otto.FunctionCall) otto.Value {
+	return func(call otto.FunctionCall) otto.Value {
+		if chatID, err := call.Argument(0).ToString(); err == nil {
+			if msgID, err := call.Argument(1).ToInteger(); err == nil {
+				a.deleteMessage(chatID, int(msgID))
 			}
 		}
 

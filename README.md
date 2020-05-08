@@ -79,6 +79,10 @@ if (callback) {
 }
 ```
 
+**deleteMessage** - deletes message
+```
+deleteMessage(message.Chat.ID, message.MessageID)
+```
 
 **prompt(text, attachment, userId)** - sends message prompting user to reply to it (force reply)
 ```
