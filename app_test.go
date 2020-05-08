@@ -459,7 +459,7 @@ func TestExecDB(t *testing.T) {
 	}
 	defer db.Close()
 
-	a := &application{dbClient: db, useDB: true}
+	a := &application{dbClient: db}
 
 	mock.ExpectExec("update table set status=1").WillReturnError(err)
 
@@ -477,7 +477,7 @@ func TestQueryDB(t *testing.T) {
 	}
 	defer db.Close()
 
-	a := &application{dbClient: db, useDB: true}
+	a := &application{dbClient: db}
 
 	rows := sqlmock.NewRows([]string{"id", "name"}).
 		AddRow(1, "tom").

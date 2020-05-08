@@ -1,4 +1,3 @@
-
 if (timer) {
     console.log("Hi " + new Date())
 } else {

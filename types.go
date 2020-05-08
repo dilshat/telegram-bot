@@ -18,7 +18,6 @@ type application struct {
 	token          string
 	vmFactory      VmFactory
 	dbClient       *sql.DB
-	useDB          bool
 }
 
 type Vm interface {

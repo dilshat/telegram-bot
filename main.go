@@ -1,23 +1,17 @@
 package main
 
 import (
-	"path/filepath"
+	"bytes"
+	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/ReneKroon/ttlcache"
-	"github.com/labstack/gommon/log"
-
-	"database/sql"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
+	"github.com/labstack/gommon/log"
 	_ "github.com/lib/pq"
 	"github.com/yanzay/tbot/v2"
-)
-
-const (
-	logicScript   = "logic.js"
-	libraryScript = "lib.js"
 )
 
 func init() {
@@ -28,23 +22,6 @@ func init() {
 }
 
 func main() {
-	//connect to db
-	var dbClient *sql.DB
-	var useDB bool
-	if GetEnv("DB_DRIVER", "") != "" && GetEnv("DB_CONN_STR", "") != "" {
-		var err error
-		dbClient, err = sql.Open(GetEnv("DB_DRIVER", ""), GetEnv("DB_CONN_STR", ""))
-		if err != nil {
-			log.Fatal("Failed to connect to db ", err)
-		}
-		if err = dbClient.Ping(); err != nil {
-			if err != nil {
-				log.Fatal("Failed to ping db ", err)
-			}
-		}
-		useDB = true
-		defer dbClient.Close()
-	}
 
 	token := GetEnv("TELEGRAM_TOKEN", "")
 	bot := tbot.New(token)
@@ -52,37 +29,17 @@ func main() {
 	cache := ttlcache.NewCache()
 	cache.SetTTL(time.Duration(GetEnvAsInt("SESSION_TTL_MIN", 60)) * time.Minute)
 
-	logicScript, err := loadScript()
-	if err != nil {
-		log.Fatal("Failed to load logic script ", err)
-	}
-
 	app := &application{
 		tgClient:       &TbotWrapper{bot.Client()},
 		cache:          cache,
 		attachmentsDir: GetEnv("ATTACHMENTS_DIR", "attachments"),
 		token:          token,
-		logicScript:    logicScript,
+		logicScript:    loadScript(),
 		vmFactory:      VmFactoryImpl{},
-		dbClient:       dbClient,
-		useDB:          useDB,
+		dbClient:       setupDB(),
 	}
 
-	//timer function
-	if GetEnv("timer", "") != "" {
-		duration, err := time.ParseDuration(GetEnv("timer", ""))
-		if err != nil {
-			log.Error("Error parsing time duration for timer ", err)
-		} else {
-			ticker := time.NewTicker(duration)
-			defer ticker.Stop()
-			go func() {
-				for range ticker.C {
-					app.handleMessage(nil, nil)
-				}
-			}()
-		}
-	}
+	setupTimer(app)
 
 	//bind handlers
 	bot.HandleMessage("", app.messageHandler)
@@ -92,18 +49,62 @@ func main() {
 	log.Fatal(bot.Start())
 }
 
-func loadScript() (string, error) {
-	libScriptPath := filepath.Join(GetEnv("SCRIPTS_PATH", "scripts"), libraryScript)
-	libScript, err := ReadFile(libScriptPath)
-	if err != nil {
-		log.Error("Failed to load library script ", err)
+func setupDB() *sql.DB {
+	if GetEnv("DB_DRIVER", "") == "" || GetEnv("DB_CONN_STR", "") == "" {
+		return nil
 	}
 
-	logicScriptPath := filepath.Join(GetEnv("SCRIPTS_PATH", "scripts"), logicScript)
-	logicScript, err := ReadFile(logicScriptPath)
+	dbClient, err := sql.Open(GetEnv("DB_DRIVER", ""), GetEnv("DB_CONN_STR", ""))
 	if err != nil {
-		return "", err
+		log.Fatal("Failed to connect to db ", err)
+	}
+	if err = dbClient.Ping(); err != nil {
+		if err != nil {
+			log.Fatal("Failed to ping db ", err)
+		}
 	}
 
-	return logicScript + "\n" + libScript, nil
+	return dbClient
+}
+
+//timer function
+func setupTimer(app *application) {
+
+	if GetEnv("timer", "") == "" {
+		return
+	}
+
+	duration, err := time.ParseDuration(GetEnv("timer", ""))
+	if err != nil {
+		log.Fatal("Error parsing time duration for timer ", err)
+	} else {
+		ticker := time.NewTicker(duration)
+		defer ticker.Stop()
+		go func() {
+			for range ticker.C {
+				app.handleMessage(nil, nil)
+			}
+		}()
+	}
+}
+
+func loadScript() string {
+
+	if GetEnv("SCRIPTS", "") == "" {
+		log.Fatal("No script specified ")
+	}
+
+	scripts := strings.Split(GetEnv("SCRIPTS", ""), ",")
+
+	var b bytes.Buffer
+	for _, scriptPath := range scripts {
+		script, err := ReadFile(scriptPath)
+		if err != nil {
+			log.Fatal("Failed to load script ", err)
+		}
+		b.WriteString(script)
+		b.WriteString("\n")
+	}
+
+	return b.String()
 }

@@ -86,7 +86,7 @@ func (a *application) doPOST(aURL string, params map[string]interface{}, headers
 }
 func (a *application) QueryDB(query string) []map[string]interface{} {
 	result := []map[string]interface{}{}
-	if a.useDB {
+	if a.dbClient != nil {
 		rows, err := a.dbClient.Query(query)
 		if err != nil {
 			log.Error("Error querying db ", err)
@@ -172,7 +172,7 @@ func (a *application) QueryDB(query string) []map[string]interface{} {
 }
 
 func (a *application) ExecDB(query string) {
-	if a.useDB {
+	if a.dbClient != nil {
 		if _, err := a.dbClient.Exec(query); err != nil {
 			log.Error("Error executing db query ", err)
 		}
