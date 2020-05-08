@@ -112,4 +112,4 @@ if (message.ReplyToMessage) {
 
 + In file `.env` set TELEGRAM_TOKEN to your bot token
 + Implement bot logic in `scripts/logic.js`. It contains an example script to be used as a reference
-+ Build bot `go build` and run `./scriptable-bot`
++ Build bot `go build` and run `./telegram-bot`
