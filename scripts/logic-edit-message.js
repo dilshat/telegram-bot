@@ -1,3 +1,7 @@
+/*
+  Please use inside `bot` object methods: onMessage, onCallback, onTimer
+*/
+
 
 var id = send("Original message", [{ "One": "option-1", "Two": "option-2", "Three": "option-3" }])
 

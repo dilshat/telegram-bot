@@ -1,4 +1,8 @@
 
+/*
+  Please use inside `bot` object methods: onMessage, onCallback, onTimer
+*/
+
 var testMsg = "<b>bold</b>, <strong>bold</strong>\n" +
     "<i>italic</i>, <em>italic</em>\n" +
     "<u>underline</u>, <ins>underline</ins>\n" +

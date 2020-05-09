@@ -10,7 +10,7 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/ReneKroon/ttlcache"
-	"github.com/dilshat/scriptable-bot/mocks"
+	"github.com/dilshat/telegram-bot/mocks"
 	"github.com/robertkrimen/otto"
 	"github.com/stretchr/testify/mock"
 	"github.com/yanzay/tbot/v2"
@@ -102,22 +102,16 @@ func (VmStub) Run(src interface{}) (otto.Value, error) {
 	return otto.Value{}, nil
 }
 
-func TestCallbackHandler(t *testing.T) {
-	vm := &VmStub{}
-	vmFactory := VmFactoryStub{vm: vm}
+func (VmStub) Call(source string, argumentList ...interface{}) (otto.Value, error) {
+	return otto.Value{}, nil
+}
 
-	telebot := &mocks.Telebot{}
+func (VmStub) Object(source string) (*otto.Object, error) {
+	return &otto.Object{}, nil
+}
 
-	callbackID := "id"
-
-	telebot.On("AnswerCallback", callbackID).Return(err)
-
-	a := &application{vmFactory: vmFactory, tgClient: telebot}
-
-	a.callbackHandler(&tbot.CallbackQuery{ID: callbackID, Message: &tbot.Message{}})
-
-	telebot.AssertExpectations(t)
-
+func (VmStub) Copy() Vm {
+	return &VmStub{}
 }
 
 func TestReplaceInlineOptions(t *testing.T) {
@@ -202,45 +196,6 @@ func TestDoPost(t *testing.T) {
 	if res != "" {
 		t.Errorf("Exptected empty response but got %s", res)
 	}
-}
-
-type VmFactoryMock struct {
-	mockVm *mocks.Vm
-}
-
-func (v VmFactoryMock) GetVm() Vm {
-	return v.mockVm
-}
-
-func TestHandleMessage(t *testing.T) {
-
-	vm := &mocks.Vm{}
-	vmFactory := VmFactoryMock{mockVm: vm}
-
-	a := &application{vmFactory: vmFactory, logicScript: "send('Hello')"}
-	m := &tbot.Message{Chat: tbot.Chat{ID: chatID}}
-
-	vm.On("Set", mock.Anything, mock.Anything).Return(nil)
-	vm.On("Run", mock.Anything).Return(otto.Value{}, nil)
-
-	a.handleMessage(m, &tbot.CallbackQuery{})
-
-	vm.AssertExpectations(t)
-
-	//test with error
-	vm = &mocks.Vm{}
-	vmFactory = VmFactoryMock{mockVm: vm}
-
-	a = &application{vmFactory: vmFactory, logicScript: "send('Hello')"}
-	m = &tbot.Message{Chat: tbot.Chat{ID: chatID}}
-
-	vm.On("Set", mock.Anything, mock.Anything).Return(nil)
-	vm.On("Run", mock.Anything).Return(otto.Value{}, errors.New("error"))
-
-	a.handleMessage(m, &tbot.CallbackQuery{})
-
-	vm.AssertExpectations(t)
-
 }
 
 func TestPromptUser(t *testing.T) {

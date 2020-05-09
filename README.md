@@ -3,7 +3,7 @@
 
 ## A simple javascript telegram bot
 
-Sometimes a simple bot is needed to be built quickly. This bot allows to write logic of bot in javascript. The script can use embedded methods to implement various functionality: sending messages with attachments, custom keyboards and inline options. You can store objects in cache and in database (mysql and postgres are supported). You can code conversational bot using session like approach. See examples in `scripts/*.js`. File `lib.js` is used to store some helper functionality.
+Sometimes a simple bot is needed to be built quickly. This bot allows to write logic of bot in javascript. The script can use embedded methods to implement various functionality: sending messages with attachments, custom keyboards and inline options. You can store objects in cache and in database (mysql and postgres are supported). You can code conversational bot using session like approach. See examples in `scripts/*.js`.
 
 ### Embedded functions:
 
@@ -57,9 +57,8 @@ send("Test", [{ "One": "option-1"}, {"Two": "option-2" }]) // button are display
  ...
 
 //process user click on a button
-if (callback) {
-  console.log("Option " + callback.Data + " selected")
-}
+console.log("Option " + callback.Data + " selected")
+
 ```
  _if button data is a valid URL, clicking the button will not trigger callback but rather attempt to navigate the specified url_
 
@@ -74,9 +73,7 @@ if (message.Photo && message.Photo.length > 0) {
 
 **replaceOptions** - replaces inline keyboard
 ```
-if (callback) {
-  replaceOptions(message.Chat.ID, message.MessageID, [{ "Three": "option-3", "Four": "option-4" }] )
-}
+replaceOptions(message.Chat.ID, message.MessageID, [{ "Three": "option-3", "Four": "option-4" }] )
 ```
 
 
@@ -111,5 +108,5 @@ if (message.ReplyToMessage) {
 ### How to use:
 
 + In file `.env` set TELEGRAM_TOKEN to your bot token
-+ Implement bot logic in `scripts/logic.js`. It contains an example script to be used as a reference
++ Implement logic in `scripts/*logic*.js`.
 + Build bot `go build` and run `./telegram-bot`

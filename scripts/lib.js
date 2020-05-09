@@ -51,37 +51,3 @@ function substring(string, start, end) {
         return slice(string, realEnd, realStart);
     }
 }
-
-//--------------------
-
-function getSession() {
-    var session = get("session")
-    if (!session) {
-        //create new session
-        var session = { step: 0 }
-        if (callback) {
-            session.id = callback.From.ID;
-            session.name = callback.From.FirstName ? callback.From.FirstName : callback.From.Username;
-        } else {
-            session.id = message.Chat.ID;
-            session.name = message.From.FirstName ? message.From.FirstName : message.From.Username;
-        }
-        set("session", session)
-    }
-    return session
-}
-
-function updateOptions(options) {
-    replaceOptions(message.Chat.ID, message.MessageID, options)
-}
-
-function proceed() {
-    var session = getSession()
-    session.step++
-    set("session", session)
-}
-
-function bye(message, attachment) {
-    send(message, null, attachment)
-    del("session")
-}

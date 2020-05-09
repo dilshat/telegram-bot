@@ -1,7 +1,19 @@
-if (timer) {
-    console.log("Hi " + new Date())
-} else {
 
+bot = {
+    onMessage: function (message) {
+        process(message, null)
+    },
+    onCallback: function (callback) {
+        process(callback.message, callback)
+    },
+    onTimer: function () {
+    },
+    onInit: function () {
+    }
+}
+
+
+function process(message, callback) {
     var step = get("step")
 
     if (!step) {
@@ -13,7 +25,7 @@ if (timer) {
     if (name.length == 1) {
         name = message.From.Username
     }
-    var userID = message.Chat.ID
+    var userID = message.From.ID
     if (!callback) {
         console.log("User " + name + " ID " + userID + " sent " + message.Text)
     } else {

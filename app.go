@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/ReneKroon/ttlcache"
 	"github.com/labstack/gommon/log"
 	"github.com/robertkrimen/otto"
 	_ "github.com/robertkrimen/otto/underscore"
@@ -36,13 +39,13 @@ func (a *application) getFileLink(fileID string) string {
 }
 
 func (a *application) messageHandler(m *tbot.Message) {
-	a.handleMessage(m, nil)
+	a.handleMessage(m)
 }
 
 func (a *application) callbackHandler(cq *tbot.CallbackQuery) {
 	a.tgClient.AnswerCallback(cq.ID)
 
-	a.handleMessage(cq.Message, cq)
+	a.handleCallback(cq)
 }
 
 func (a *application) replaceInlineOptions(chatID string, msgID int, inlineOptions []map[string]interface{}) int {
@@ -179,7 +182,72 @@ func (a *application) ExecDB(query string) {
 	}
 }
 
-func (a *application) handleMessage(m *tbot.Message, cq *tbot.CallbackQuery) {
+func (a *application) initialize() error {
+
+	//prepare js runtime
+	if GetEnv("SCRIPTS", "") == "" {
+		return errors.New("No scripts are configured")
+	}
+
+	scripts := strings.Split(GetEnv("SCRIPTS", ""), ",")
+
+	var b bytes.Buffer
+	for _, scriptPath := range scripts {
+		script, err := ReadFile(scriptPath)
+		if err != nil {
+			return err
+		}
+		b.WriteString(script)
+		b.WriteString("\n")
+	}
+
+	a.vmTemplate = a.createVmTemplate()
+	if _, err := a.vmTemplate.Run(b.String()); err != nil {
+		return err
+	}
+	if _, err := a.vmTemplate.Object("bot"); err != nil {
+		return err
+	}
+
+	//setup DB connection
+	if GetEnv("DB_DRIVER", "") != "" && GetEnv("DB_CONN_STR", "") != "" {
+		var err error
+		if a.dbClient, err = sql.Open(GetEnv("DB_DRIVER", ""), GetEnv("DB_CONN_STR", "")); err != nil {
+			return err
+		}
+		if err = a.dbClient.Ping(); err != nil {
+			return err
+		}
+	}
+
+	//configure cache
+	a.cache = ttlcache.NewCache()
+	a.cache.SetTTL(time.Duration(GetEnvAsInt("SESSION_TTL_MIN", 60)) * time.Minute)
+
+	return nil
+}
+
+func (a *application) GetBot(id string) *otto.Object {
+	vm := a.vmTemplate.Copy()
+
+	if id != "" {
+		vm.Set("send", a.getSendFunc(id))
+
+		vm.Set("prompt", a.getPromptFunc(id))
+
+		vm.Set("set", a.getSetFunc(id))
+
+		vm.Set("get", a.getGetFunc(id))
+
+		vm.Set("del", a.getDelFunc(id))
+	}
+
+	bot, _ := vm.Object("bot")
+
+	return bot
+}
+
+func (a *application) createVmTemplate() Vm {
 
 	vm := a.vmFactory.GetVm()
 
@@ -201,32 +269,63 @@ func (a *application) handleMessage(m *tbot.Message, cq *tbot.CallbackQuery) {
 
 	vm.Set("sleep", a.getSleepFunc())
 
-	id := ""
-	if m != nil {
-		id = m.Chat.ID
-		vm.Set("timer", false)
-	} else {
-		vm.Set("timer", true)
-	}
+	vm.Set("send", a.getSendFunc(""))
 
-	vm.Set("send", a.getSendFunc(id))
+	vm.Set("prompt", a.getPromptFunc(""))
 
-	vm.Set("prompt", a.getPromptFunc(id))
+	vm.Set("set", a.getSetFunc(""))
 
-	vm.Set("set", a.getSetFunc(id))
+	vm.Set("get", a.getGetFunc(""))
 
-	vm.Set("get", a.getGetFunc(id))
+	vm.Set("del", a.getDelFunc(""))
 
-	vm.Set("del", a.getDelFunc(id))
+	return vm
+}
 
-	vm.Set("callback", cq)
-
-	vm.Set("message", m)
-
-	_, err := vm.Run(a.logicScript)
+func (a *application) onTimer() {
+	_, err := a.GetBot("").Call("onTimer")
 
 	if err != nil {
-		log.Error("Error executing script ", err)
+		log.Error("Error in onTimer ", err)
+	}
+}
+
+func (a *application) onInit() {
+	//start timer here when everything is ready
+	if GetEnv("TIMER", "") != "" {
+		duration, err := time.ParseDuration(GetEnv("TIMER", ""))
+		if err != nil {
+			log.Error("Error parsing time duration for timer ", err)
+		} else {
+			ticker := time.NewTicker(duration)
+			go func() {
+				for range ticker.C {
+					a.onTimer()
+				}
+			}()
+		}
+	}
+
+	_, err := a.GetBot("").Call("onInit")
+
+	if err != nil {
+		log.Error("Error in onInit ", err)
+	}
+}
+
+func (a *application) handleMessage(m *tbot.Message) {
+	_, err := a.GetBot(fmt.Sprintf("%d", m.From.ID)).Call("onMessage", m)
+
+	if err != nil {
+		log.Error("Error in handleMessage ", err)
+	}
+}
+
+func (a *application) handleCallback(cq *tbot.CallbackQuery) {
+	_, err := a.GetBot(fmt.Sprintf("%d", cq.From.ID)).Call("onCallback", cq)
+
+	if err != nil {
+		log.Error("Error in handleCallback ", err)
 	}
 }
 

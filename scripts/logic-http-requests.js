@@ -1,3 +1,7 @@
+/*
+  Please use inside `bot` object methods: onMessage, onCallback, onTimer, onInit
+*/
+
 var resp1 = doGet("https://jsonplaceholder.typicode.com/comments", { postId: "1" })
 resp1Json = JSON.parse(resp1)
 console.log(resp1Json[0].email)

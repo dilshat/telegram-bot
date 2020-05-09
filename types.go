@@ -14,15 +14,18 @@ type application struct {
 	tgClient       Telebot
 	cache          *ttlcache.Cache
 	attachmentsDir string
-	logicScript    string
 	token          string
 	vmFactory      VmFactory
 	dbClient       *sql.DB
+	vmTemplate     Vm
 }
 
 type Vm interface {
 	Set(name string, value interface{}) error
 	Run(src interface{}) (otto.Value, error)
+	Call(source string, argumentList ...interface{}) (otto.Value, error)
+	Object(source string) (*otto.Object, error)
+	Copy() Vm
 }
 
 type VmWrapper struct {
@@ -35,6 +38,18 @@ func (v VmWrapper) Set(name string, value interface{}) error {
 
 func (v VmWrapper) Run(src interface{}) (otto.Value, error) {
 	return v.vm.Run(src)
+}
+
+func (v VmWrapper) Call(source string, argumentList ...interface{}) (otto.Value, error) {
+	return v.vm.Call(source, nil, argumentList...)
+}
+
+func (v VmWrapper) Object(source string) (*otto.Object, error) {
+	return v.vm.Object(source)
+}
+
+func (v VmWrapper) Copy() Vm {
+	return &VmWrapper{vm: v.vm.Copy()}
 }
 
 type VmFactory interface {

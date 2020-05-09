@@ -10,6 +10,69 @@ type Vm struct {
 	mock.Mock
 }
 
+// Call provides a mock function with given fields: source, argumentList
+func (_m *Vm) Call(source string, argumentList ...interface{}) (otto.Value, error) {
+	var _ca []interface{}
+	_ca = append(_ca, source)
+	_ca = append(_ca, argumentList...)
+	ret := _m.Called(_ca...)
+
+	var r0 otto.Value
+	if rf, ok := ret.Get(0).(func(string, ...interface{}) otto.Value); ok {
+		r0 = rf(source, argumentList...)
+	} else {
+		r0 = ret.Get(0).(otto.Value)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string, ...interface{}) error); ok {
+		r1 = rf(source, argumentList...)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// Copy provides a mock function with given fields:
+func (_m *Vm) Copy() Vm {
+	ret := _m.Called()
+
+	var r0 Vm
+	if rf, ok := ret.Get(0).(func() Vm); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(Vm)
+		}
+	}
+
+	return r0
+}
+
+// Object provides a mock function with given fields: source
+func (_m *Vm) Object(source string) (*otto.Object, error) {
+	ret := _m.Called(source)
+
+	var r0 *otto.Object
+	if rf, ok := ret.Get(0).(func(string) *otto.Object); ok {
+		r0 = rf(source)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*otto.Object)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(string) error); ok {
+		r1 = rf(source)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Run provides a mock function with given fields: src
 func (_m *Vm) Run(src interface{}) (otto.Value, error) {
 	ret := _m.Called(src)
