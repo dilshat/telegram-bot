@@ -314,7 +314,7 @@ func (a *application) onInit() {
 }
 
 func (a *application) handleMessage(m *tbot.Message) {
-	_, err := a.GetBot(fmt.Sprintf("%d", m.From.ID)).Call("onMessage", m)
+	_, err := a.GetBot(m.Chat.ID).Call("onMessage", m)
 
 	if err != nil {
 		log.Error("Error in handleMessage ", err)
@@ -322,7 +322,7 @@ func (a *application) handleMessage(m *tbot.Message) {
 }
 
 func (a *application) handleCallback(cq *tbot.CallbackQuery) {
-	_, err := a.GetBot(fmt.Sprintf("%d", cq.From.ID)).Call("onCallback", cq)
+	_, err := a.GetBot(cq.Message.Chat.ID).Call("onCallback", cq)
 
 	if err != nil {
 		log.Error("Error in handleCallback ", err)
