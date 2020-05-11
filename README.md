@@ -91,7 +91,8 @@ editMessage(message.Chat.ID, id, "Edited message", [{ "Three": "option-3", "Four
 deleteMessage(message.Chat.ID, message.MessageID)
 ```
 
-**prompt(text, attachment, userId)** - sends message prompting user to reply to it (force reply)
+**prompt(text, attachment, userId)** - sends message prompting user to reply to it (force reply).
+_When bot is used in group chats, use this method to allow bot recieve user messages and respond to them, because bot can not "see" ordinary text messages in group chats, it "sees" only reply messages_
 ```
 prompt("What is your phone number") 
 
