@@ -3,8 +3,10 @@ package main
 import (
 	"bytes"
 	"database/sql"
+	"encoding/csv"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -87,6 +89,47 @@ func (a *application) doPOST(aURL string, params map[string]interface{}, headers
 
 	return resp
 }
+
+func (a *application) ReportDB(userID string, text string, query string, name string) int {
+	results := a.QueryDB(query)
+
+	resLen := len(results)
+	if resLen > 0 {
+		report := make([][]string, resLen+1)
+		for id, row := range results {
+			if id == 0 {
+				//append column names
+				report[0] = make([]string, 0, len(row))
+				for key := range row {
+					report[0] = append(report[0], key)
+				}
+			}
+			report[id+1] = make([]string, 0, len(row))
+			//append values
+			for _, key := range report[0] {
+				report[id+1] = append(report[id+1], fmt.Sprintf("%v", row[key]))
+			}
+		}
+		file, err := os.Create(filepath.Join(a.attachmentsDir, name+".csv"))
+		if err != nil {
+			log.Error("Error creating report on disk ", err)
+		} else {
+			defer os.Remove(file.Name())
+			defer file.Close()
+			w := csv.NewWriter(file)
+			if err := w.WriteAll(report); err != nil {
+				log.Error("Error saving report to disk ", err)
+			} else {
+				return a.sendMessage(userID, text, [][]string{}, []map[string]interface{}{}, name+".csv")
+			}
+		}
+
+	}
+
+	log.Info("Skipped empty resultset in report generation")
+	return 0
+}
+
 func (a *application) QueryDB(query string) []map[string]interface{} {
 	result := []map[string]interface{}{}
 	if a.dbClient != nil {
@@ -240,6 +283,8 @@ func (a *application) GetBot(id string) *otto.Object {
 		vm.Set("get", a.getGetFunc(id))
 
 		vm.Set("del", a.getDelFunc(id))
+
+		vm.Set("dbReport", a.getReportDBFunc(id))
 	}
 
 	bot, _ := vm.Object("bot")
@@ -258,6 +303,8 @@ func (a *application) createVmTemplate() Vm {
 	vm.Set("dbQuery", a.getQueryDBFunc())
 
 	vm.Set("dbExec", a.getExecDBFunc())
+
+	vm.Set("dbReport", a.getReportDBFunc(""))
 
 	vm.Set("getFileLink", a.getGetFileLinkFunc())
 
@@ -326,6 +373,31 @@ func (a *application) handleCallback(cq *tbot.CallbackQuery) {
 
 	if err != nil {
 		log.Error("Error in handleCallback ", err)
+	}
+}
+
+func (a *application) getReportDBFunc(userID string) func(call otto.FunctionCall) otto.Value {
+	return func(call otto.FunctionCall) otto.Value {
+		result := otto.Value{}
+
+		if query, err := call.Argument(0).ToString(); err == nil {
+			if name, err := call.Argument(1).ToString(); err == nil {
+				if text, err := call.Argument(2).ToString(); err == nil {
+					targetUser := userID
+					if call.Argument(3).IsDefined() {
+						targetUser, _ = call.Argument(3).ToString()
+					}
+
+					id := a.ReportDB(targetUser, text, query, name)
+
+					result, _ := otto.ToValue(id)
+
+					return result
+				}
+			}
+		}
+
+		return result
 	}
 }
 
