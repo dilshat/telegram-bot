@@ -14,7 +14,7 @@ import (
 	"github.com/robertkrimen/otto"
 	"github.com/stretchr/testify/mock"
 	"github.com/yanzay/tbot/v2"
-	"gopkg.in/go-playground/assert.v1"
+	"github.com/stretchr/testify/assert"
 )
 
 var (

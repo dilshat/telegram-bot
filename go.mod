@@ -14,6 +14,5 @@ require (
 	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.5.1
 	github.com/yanzay/tbot/v2 v2.1.0
-	gopkg.in/go-playground/assert.v1 v1.2.1
 	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 )
