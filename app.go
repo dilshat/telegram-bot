@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -110,7 +111,7 @@ func (a *application) ReportDB(userID string, text string, query string, name st
 				report[id+1] = append(report[id+1], fmt.Sprintf("%v", row[key]))
 			}
 		}
-		file, err := os.Create(filepath.Join(a.attachmentsDir, name+".csv"))
+		file, err := ioutil.TempFile(a.attachmentsDir, fmt.Sprintf("%s*.csv", name))
 		if err != nil {
 			log.Error("Error creating report on disk ", err)
 		} else {
@@ -120,7 +121,8 @@ func (a *application) ReportDB(userID string, text string, query string, name st
 			if err := w.WriteAll(report); err != nil {
 				log.Error("Error saving report to disk ", err)
 			} else {
-				return a.sendMessage(userID, text, [][]string{}, []map[string]interface{}{}, name+".csv")
+				_, basename := filepath.Split(file.Name())
+				return a.sendMessage(userID, text, [][]string{}, []map[string]interface{}{}, basename)
 			}
 		}
 
