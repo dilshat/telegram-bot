@@ -14,31 +14,18 @@ bot = {
 
 
 function process(message, callback) {
-    var step = get("step")
 
+    var userID = getUserID(message, callback)
+    var userName = getUserName(message, callback)
+
+    var step = get("step")
     if (!step) {
         step = { id: 0 }
         set("step", step)
     }
 
-    var name = message.From.FirstName + ' ' + message.From.LastName
-    if (name.length == 1) {
-        name = message.From.Username
-    }
-    var userID = message.From.ID
-    if (!callback) {
-        console.log("User " + name + " ID " + userID + " sent " + message.Text)
-    } else {
-        name = callback.From.FirstName + ' ' + callback.From.LastName
-        if (name.length == 1) {
-            name = callback.From.Username
-        }
-        userID = callback.From.ID
-        console.log("User " + name + " ID " + userID + " selected option " + callback.Data)
-    }
-
     if (step.id == 0) {
-        send("Hello " + name + "! Do you like this picture?", [["Yes", "No"], ["Maybe", "Hard to say"]], "smile.jpg")
+        send("Hello " + userName + "! Do you like this picture?", [["Yes", "No"], ["Maybe", "Hard to say"]], "smile.jpg")
         step.id++
         set("step", step)
     } else if (step.id == 1) {
@@ -51,10 +38,17 @@ function process(message, callback) {
         set("step", step)
     } else {
         if (message.ReplyToMessage) {
-            console.log("User " + name + " ID " + userID + " replied to question " + message.ReplyToMessage.Text + " with " + message.Text)
+            console.log("User " + userName + " ID " + userID + " replied to question " + message.ReplyToMessage.Text + " with " + message.Text)
         }
         send("Bye!")
         del("step")
+    }
+
+    //log
+    if (!callback) {
+        console.log("User " + userName + " ID " + userID + " sent " + message.Text)
+    } else {
+        console.log("User " + userName + " ID " + userID + " selected option " + callback.Data)
     }
 
 }

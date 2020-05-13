@@ -51,3 +51,26 @@ function substring(string, start, end) {
         return slice(string, realEnd, realStart);
     }
 }
+
+function getUserID(message, callback){
+    return callback? callback.From.ID : message.From.ID
+}
+
+
+function getUserName(message, callback) {
+    var name
+
+    if (callback) {
+        name = callback.From.FirstName + ' ' + callback.From.LastName
+        if (name.length == 1) {
+            name = callback.From.Username
+        }
+    } else {
+        name = message.From.FirstName + ' ' + message.From.LastName
+        if (name.length == 1) {
+            name = message.From.Username
+        }
+    }
+
+    return name
+}

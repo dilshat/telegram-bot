@@ -73,8 +73,8 @@ func (a *application) editMessage(chatID string, msgID int, text string, inlineO
 	}
 }
 
-func (a *application) doGet(aURL string, params map[string]interface{}, headers map[string]interface{}) string {
-	resp, err := doGET(aURL, params, headers)
+func (a *application) doGet(aURL string, params map[string]interface{}, headers map[string]interface{}, timeoutSec int) string {
+	resp, err := doGET(aURL, params, headers, timeoutSec)
 	if err != nil {
 		log.Error("Error performing GET request ", err)
 	}
@@ -82,8 +82,8 @@ func (a *application) doGet(aURL string, params map[string]interface{}, headers 
 	return resp
 }
 
-func (a *application) doPOST(aURL string, params map[string]interface{}, headers map[string]interface{}) string {
-	resp, err := doPOST(aURL, params, headers)
+func (a *application) doPOST(aURL string, params map[string]interface{}, headers map[string]interface{}, timeoutSec int) string {
+	resp, err := doPOST(aURL, params, headers, timeoutSec)
 	if err != nil {
 		log.Error("Error performing POST request ", err)
 	}
@@ -386,8 +386,11 @@ func (a *application) getReportDBFunc(userID string) func(call otto.FunctionCall
 			if name, err := call.Argument(1).ToString(); err == nil {
 				if text, err := call.Argument(2).ToString(); err == nil {
 					targetUser := userID
-					if call.Argument(3).IsDefined() {
-						targetUser, _ = call.Argument(3).ToString()
+
+					if call.Argument(3).IsNumber() {
+						if tu, err := call.Argument(3).ToString(); err == nil {
+							targetUser = tu
+						}
 					}
 
 					id := a.ReportDB(targetUser, text, query, name)
@@ -446,7 +449,13 @@ func (a *application) getDoGetFunc() func(call otto.FunctionCall) otto.Value {
 					if headersInterface, err := call.Argument(2).Export(); err == nil {
 						headers, _ = headersInterface.(map[string]interface{})
 					}
-					result, _ = otto.ToValue(a.doGet(aURL, params, headers))
+					timeout := 30
+					if call.Argument(3).IsNumber() {
+						if t, err := call.Argument(3).ToInteger(); err == nil {
+							timeout = int(t)
+						}
+					}
+					result, _ = otto.ToValue(a.doGet(aURL, params, headers, timeout))
 				}
 			}
 		}
@@ -466,7 +475,13 @@ func (a *application) getDoPostFunc() func(call otto.FunctionCall) otto.Value {
 					if headersInterface, err := call.Argument(2).Export(); err == nil {
 						headers, _ = headersInterface.(map[string]interface{})
 					}
-					result, _ = otto.ToValue(a.doPOST(aURL, params, headers))
+					timeout := 30
+					if call.Argument(3).IsNumber() {
+						if t, err := call.Argument(3).ToInteger(); err == nil {
+							timeout = int(t)
+						}
+					}
+					result, _ = otto.ToValue(a.doPOST(aURL, params, headers, timeout))
 				}
 			}
 		}
@@ -584,8 +599,10 @@ func (a *application) getPromptFunc(userID string) func(call otto.FunctionCall) 
 		}
 
 		targetUser = userID
-		if call.Argument(2).IsDefined() {
-			targetUser, _ = call.Argument(2).ToString()
+		if call.Argument(2).IsNumber() {
+			if tu, err := call.Argument(2).ToString(); err == nil {
+				targetUser = tu
+			}
 		}
 
 		id := a.promptUser(targetUser, text, attachment)
@@ -621,8 +638,10 @@ func (a *application) getSendFunc(userID string) func(call otto.FunctionCall) ot
 		}
 
 		targetUser = userID
-		if call.Argument(3).IsDefined() {
-			targetUser, _ = call.Argument(3).ToString()
+		if call.Argument(3).IsNumber() {
+			if tu, err := call.Argument(3).ToString(); err == nil {
+				targetUser = tu
+			}
 		}
 
 		id := a.sendMessage(targetUser, text, options, inlineOptions, attachment)

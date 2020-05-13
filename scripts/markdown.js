@@ -1,9 +1,20 @@
 
-/*
-  Please use inside `bot` object methods: onMessage, onCallback, onTimer
-*/
+bot = {
+  onMessage: function (message) {
+    process(message, null)
+  },
+  onCallback: function (callback) {
+    process(callback.message, callback)
+  },
+  onTimer: function () {
+  },
+  onInit: function () {
+  }
+}
 
-var testMsg = "<b>bold</b>, <strong>bold</strong>\n" +
+function process(message) {
+
+  var testMsg = "<b>bold</b>, <strong>bold</strong>\n" +
     "<i>italic</i>, <em>italic</em>\n" +
     "<u>underline</u>, <ins>underline</ins>\n" +
     "<s>strikethrough</s>, <strike>strikethrough</strike>, <del>strikethrough</del>\n" +
@@ -14,4 +25,6 @@ var testMsg = "<b>bold</b>, <strong>bold</strong>\n" +
     "<pre>pre-formatted fixed-width code block</pre>\n" +
     "<pre><code class='language-python'>pre-formatted fixed-width code block written in the Python programming language</code></pre>";
 
-send(testMsg)
+  send(testMsg)
+  
+}

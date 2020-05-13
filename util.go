@@ -108,13 +108,13 @@ func isValidUrl(toTest string) bool {
 	return true
 }
 
-func doPOST(aURL string, payload map[string]interface{}, headers map[string]interface{}) (string, error) {
+func doPOST(aURL string, payload map[string]interface{}, headers map[string]interface{}, timeoutSec int) (string, error) {
 	bytesRepresentation, err := json.Marshal(payload)
 	if err != nil {
 		return "", err
 	}
 
-	client := &http.Client{Timeout: time.Second * 30}
+	client := &http.Client{Timeout: time.Second * time.Duration(timeoutSec)}
 
 	req, err := http.NewRequest("POST", aURL, bytes.NewBuffer(bytesRepresentation))
 	if err != nil {
@@ -140,7 +140,7 @@ func doPOST(aURL string, payload map[string]interface{}, headers map[string]inte
 	return string(data), nil
 }
 
-func doGET(aURL string, params map[string]interface{}, headers map[string]interface{}) (string, error) {
+func doGET(aURL string, params map[string]interface{}, headers map[string]interface{}, timeoutSec int) (string, error) {
 	urlParams := url.Values{}
 
 	for key, val := range params {
@@ -157,7 +157,7 @@ func doGET(aURL string, params map[string]interface{}, headers map[string]interf
 
 	req.URL.RawQuery = urlParams.Encode()
 
-	client := &http.Client{Timeout: time.Second * 30}
+	client := &http.Client{Timeout: time.Second * time.Duration(timeoutSec)}
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err

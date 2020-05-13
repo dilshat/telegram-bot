@@ -103,7 +103,7 @@ func TestDoGet2(t *testing.T) {
 
 	defer server.Close()
 
-	res, err := doGET(server.URL, map[string]interface{}{"a": "b"}, map[string]interface{}{"c": "d"})
+	res, err := doGET(server.URL, map[string]interface{}{"a": "b"}, map[string]interface{}{"c": "d"}, 10)
 
 	assert.NotEmpty(t, res)
 	assert.Nil(t, err)
@@ -116,7 +116,7 @@ func TestDoPost2(t *testing.T) {
 
 	defer server.Close()
 
-	res, err := doPOST(server.URL, map[string]interface{}{"a": "b"}, map[string]interface{}{"c": "d"})
+	res, err := doPOST(server.URL, map[string]interface{}{"a": "b"}, map[string]interface{}{"c": "d"}, 10)
 
 	assert.NotEmpty(t, res)
 	assert.Nil(t, err)
