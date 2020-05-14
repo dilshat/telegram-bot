@@ -91,8 +91,8 @@ func (a *application) doPOST(aURL string, params map[string]interface{}, headers
 	return resp
 }
 
-func (a *application) ReportDB(userID string, text string, query string, name string) int {
-	results := a.QueryDB(query)
+func (a *application) ReportDB(userID string, text string, query string, name string, args []interface{}) int {
+	results := a.QueryDB(query, args)
 
 	resLen := len(results)
 	if resLen > 0 {
@@ -132,10 +132,10 @@ func (a *application) ReportDB(userID string, text string, query string, name st
 	return 0
 }
 
-func (a *application) QueryDB(query string) []map[string]interface{} {
+func (a *application) QueryDB(query string, args []interface{}) []map[string]interface{} {
 	result := []map[string]interface{}{}
 	if a.dbClient != nil {
-		rows, err := a.dbClient.Query(query)
+		rows, err := a.dbClient.Query(query, args...)
 		if err != nil {
 			log.Error("Error querying db ", err)
 			return result
@@ -219,12 +219,18 @@ func (a *application) QueryDB(query string) []map[string]interface{} {
 	return result
 }
 
-func (a *application) ExecDB(query string) {
+func (a *application) ExecDB(query string, args []interface{}) int64 {
 	if a.dbClient != nil {
-		if _, err := a.dbClient.Exec(query); err != nil {
+		res, err := a.dbClient.Exec(query, args...)
+		if err != nil {
 			log.Error("Error executing db query ", err)
+		} else {
+			id, _ := res.LastInsertId()
+
+			return id
 		}
 	}
+	return 0
 }
 
 func (a *application) initialize() error {
@@ -382,24 +388,34 @@ func (a *application) getReportDBFunc(userID string) func(call otto.FunctionCall
 	return func(call otto.FunctionCall) otto.Value {
 		result := otto.Value{}
 
-		if query, err := call.Argument(0).ToString(); err == nil {
-			if name, err := call.Argument(1).ToString(); err == nil {
-				if text, err := call.Argument(2).ToString(); err == nil {
-					targetUser := userID
+		name := "report"
+		if n, err := call.Argument(0).ToString(); err == nil {
+			name = n
+		}
 
-					if call.Argument(3).IsNumber() {
-						if tu, err := call.Argument(3).ToString(); err == nil {
-							targetUser = tu
-						}
-					}
+		text := ""
+		if t, err := call.Argument(1).ToString(); err == nil {
+			text = t
+		}
 
-					id := a.ReportDB(targetUser, text, query, name)
-
-					result, _ := otto.ToValue(id)
-
-					return result
-				}
+		targetUser := userID
+		if call.Argument(2).IsNumber() {
+			if tu, err := call.Argument(2).ToString(); err == nil {
+				targetUser = tu
 			}
+		}
+
+		if query, err := call.Argument(3).ToString(); err == nil {
+
+			var arguments []interface{}
+			for i := 4; i < len(call.ArgumentList); i++ {
+				arg, _ := call.Argument(i).Export()
+				arguments = append(arguments, arg)
+			}
+
+			id := a.ReportDB(targetUser, text, query, name, arguments)
+
+			result, _ = otto.ToValue(id)
 		}
 
 		return result
@@ -411,7 +427,12 @@ func (a *application) getQueryDBFunc() func(call otto.FunctionCall) otto.Value {
 		result := otto.Value{}
 
 		if query, err := call.Argument(0).ToString(); err == nil {
-			result, _ = otto.New().ToValue(a.QueryDB(query))
+			var arguments []interface{}
+			for i := 1; i < len(call.ArgumentList); i++ {
+				arg, _ := call.Argument(i).Export()
+				arguments = append(arguments, arg)
+			}
+			result, _ = otto.New().ToValue(a.QueryDB(query, arguments))
 		}
 
 		return result
@@ -420,11 +441,20 @@ func (a *application) getQueryDBFunc() func(call otto.FunctionCall) otto.Value {
 
 func (a *application) getExecDBFunc() func(call otto.FunctionCall) otto.Value {
 	return func(call otto.FunctionCall) otto.Value {
+		result := otto.Value{}
+
 		if query, err := call.Argument(0).ToString(); err == nil {
-			a.ExecDB(query)
+			var arguments []interface{}
+			for i := 1; i < len(call.ArgumentList); i++ {
+				arg, _ := call.Argument(i).Export()
+				arguments = append(arguments, arg)
+			}
+			var id int64
+			id = a.ExecDB(query, arguments)
+			result, _ = otto.ToValue(id)
 		}
 
-		return otto.Value{}
+		return result
 	}
 }
 

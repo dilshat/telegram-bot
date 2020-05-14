@@ -12,9 +12,9 @@ import (
 	"github.com/ReneKroon/ttlcache"
 	"github.com/dilshat/telegram-bot/mocks"
 	"github.com/robertkrimen/otto"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/yanzay/tbot/v2"
-	"github.com/stretchr/testify/assert"
 )
 
 var (
@@ -418,7 +418,7 @@ func TestExecDB(t *testing.T) {
 
 	mock.ExpectExec("update table set status=1").WillReturnError(err)
 
-	a.ExecDB("update table set status=1")
+	a.ExecDB("update table set status=1", nil)
 
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Errorf("there were unfulfilled expectations: %s", err)
@@ -440,7 +440,7 @@ func TestQueryDB(t *testing.T) {
 
 	mock.ExpectQuery("select id, name from user").WillReturnRows(rows)
 
-	res := a.QueryDB("select id, name from user")
+	res := a.QueryDB("select id, name from user", nil)
 
 	assert.Equal(t, 2, len(res))
 
