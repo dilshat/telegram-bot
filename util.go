@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -174,7 +173,7 @@ func doGET(aURL string, params map[string]interface{}, headers map[string]interf
 
 func ReadFile(path string) (string, error) {
 	if !FileExists(path) {
-		return "", errors.New(fmt.Sprintf("File %s not found", path))
+		return "", fmt.Errorf("File %s not found", path)
 	}
 
 	fileContent, err := ioutil.ReadFile(path)

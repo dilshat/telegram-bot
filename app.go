@@ -443,21 +443,29 @@ func (a *application) getDoGetFunc() func(call otto.FunctionCall) otto.Value {
 		result := otto.Value{}
 
 		if aURL, err := call.Argument(0).ToString(); err == nil {
+			//request parameters
+			var params map[string]interface{}
 			if paramsInterface, err := call.Argument(1).Export(); err == nil {
-				if params, ok := paramsInterface.(map[string]interface{}); ok {
-					var headers map[string]interface{}
-					if headersInterface, err := call.Argument(2).Export(); err == nil {
-						headers, _ = headersInterface.(map[string]interface{})
-					}
-					timeout := 30
-					if call.Argument(3).IsNumber() {
-						if t, err := call.Argument(3).ToInteger(); err == nil {
-							timeout = int(t)
-						}
-					}
-					result, _ = otto.ToValue(a.doGet(aURL, params, headers, timeout))
+				if pz, ok := paramsInterface.(map[string]interface{}); ok {
+					params = pz
 				}
 			}
+			//request headers
+			var headers map[string]interface{}
+			if headersInterface, err := call.Argument(2).Export(); err == nil {
+				if hz, ok := headersInterface.(map[string]interface{}); ok {
+					headers = hz
+				}
+			}
+			//request timeout
+			timeout := 30
+			if call.Argument(3).IsNumber() {
+				if t, err := call.Argument(3).ToInteger(); err == nil {
+					timeout = int(t)
+				}
+			}
+			result, _ = otto.ToValue(a.doGet(aURL, params, headers, timeout))
+
 		}
 
 		return result
@@ -469,21 +477,29 @@ func (a *application) getDoPostFunc() func(call otto.FunctionCall) otto.Value {
 		result := otto.Value{}
 
 		if aURL, err := call.Argument(0).ToString(); err == nil {
+			//request parameters
+			var params map[string]interface{}
 			if paramsInterface, err := call.Argument(1).Export(); err == nil {
-				if params, ok := paramsInterface.(map[string]interface{}); ok {
-					var headers map[string]interface{}
-					if headersInterface, err := call.Argument(2).Export(); err == nil {
-						headers, _ = headersInterface.(map[string]interface{})
-					}
-					timeout := 30
-					if call.Argument(3).IsNumber() {
-						if t, err := call.Argument(3).ToInteger(); err == nil {
-							timeout = int(t)
-						}
-					}
-					result, _ = otto.ToValue(a.doPOST(aURL, params, headers, timeout))
+				if pz, ok := paramsInterface.(map[string]interface{}); ok {
+					params = pz
 				}
 			}
+			//request headers
+			var headers map[string]interface{}
+			if headersInterface, err := call.Argument(2).Export(); err == nil {
+				if hz, ok := headersInterface.(map[string]interface{}); ok {
+					headers = hz
+				}
+			}
+			//request timeout
+			timeout := 30
+			if call.Argument(3).IsNumber() {
+				if t, err := call.Argument(3).ToInteger(); err == nil {
+					timeout = int(t)
+				}
+			}
+			result, _ = otto.ToValue(a.doPOST(aURL, params, headers, timeout))
+
 		}
 
 		return result
