@@ -273,7 +273,12 @@ func (a *application) initialize() error {
 
 	//configure cache
 	a.cache = ttlcache.NewCache()
-	a.cache.SetTTL(time.Duration(GetEnvAsInt("SESSION_TTL_MIN", 60)) * time.Minute)
+	duration, err := time.ParseDuration(GetEnv("CACHE_TTL", "30m"))
+	if err != nil {
+		log.Error("Error parsing time duration for cache ttl, ttl set to 30 minutes ", err)
+		duration = time.Minute * 30
+	}
+	a.cache.SetTTL(duration)
 
 	return nil
 }
