@@ -404,7 +404,7 @@ func (a *application) getReportDBFunc(userID string) func(call otto.FunctionCall
 		}
 
 		targetUser := userID
-		if call.Argument(2).IsDefined() {
+		if call.Argument(2).IsDefined() && !call.Argument(2).IsNull() {
 			if tu, err := call.Argument(2).ToString(); err == nil {
 				targetUser = tu
 			}
@@ -650,7 +650,7 @@ func (a *application) getPromptFunc(userID string) func(call otto.FunctionCall) 
 		}
 
 		targetUser = userID
-		if call.Argument(2).IsDefined() {
+		if call.Argument(2).IsDefined() && !call.Argument(2).IsNull() {
 			if tu, err := call.Argument(2).ToString(); err == nil {
 				targetUser = tu
 			}
@@ -689,7 +689,7 @@ func (a *application) getSendFunc(userID string) func(call otto.FunctionCall) ot
 		}
 
 		targetUser = userID
-		if call.Argument(3).IsDefined() {
+		if call.Argument(3).IsDefined() && !call.Argument(3).IsNull() {
 			if tu, err := call.Argument(3).ToString(); err == nil {
 				targetUser = tu
 			}
