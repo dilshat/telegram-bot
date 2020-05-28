@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/DATA-DOG/go-sqlmock v1.4.1
 	github.com/ReneKroon/ttlcache v1.6.0
+	github.com/elliotchance/orderedmap v1.2.2
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/h2non/filetype v1.0.12
 	github.com/joho/godotenv v1.3.0

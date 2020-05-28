@@ -4,15 +4,18 @@ import (
 	"bytes"
 	"database/sql"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/ReneKroon/ttlcache"
+	"github.com/elliotchance/orderedmap"
 	"github.com/labstack/gommon/log"
 	"github.com/robertkrimen/otto"
 	_ "github.com/robertkrimen/otto/underscore"
@@ -100,15 +103,15 @@ func (a *application) ReportDB(userID string, text string, query string, name st
 		for id, row := range results {
 			if id == 0 {
 				//append column names
-				report[0] = make([]string, 0, len(row))
-				for key := range row {
-					report[0] = append(report[0], key)
+				report[0] = make([]string, 0, row.Len())
+				for el := row.Front(); el != nil; el = el.Next() {
+					report[0] = append(report[0], fmt.Sprintf("%s", el.Key))
 				}
 			}
-			report[id+1] = make([]string, 0, len(row))
+			report[id+1] = make([]string, 0, row.Len())
 			//append values
 			for _, key := range report[0] {
-				report[id+1] = append(report[id+1], fmt.Sprintf("%v", row[key]))
+				report[id+1] = append(report[id+1], fmt.Sprintf("%v", row.GetOrDefault(key, "")))
 			}
 		}
 		file, err := ioutil.TempFile(a.attachmentsDir, fmt.Sprintf("%s*.csv", name))
@@ -132,8 +135,8 @@ func (a *application) ReportDB(userID string, text string, query string, name st
 	return 0
 }
 
-func (a *application) QueryDB(query string, args []interface{}) []map[string]interface{} {
-	result := []map[string]interface{}{}
+func (a *application) QueryDB(query string, args []interface{}) []*orderedmap.OrderedMap {
+	result := []*orderedmap.OrderedMap{}
 	if a.dbClient != nil {
 		rows, err := a.dbClient.Query(query, args...)
 		if err != nil {
@@ -179,42 +182,40 @@ func (a *application) QueryDB(query string, args []interface{}) []map[string]int
 				return result
 			}
 
-			masterData := map[string]interface{}{}
+			masterData := orderedmap.NewOrderedMap()
 
 			for i, v := range columnTypes {
 
 				if z, ok := (scanArgs[i]).(*sql.NullBool); ok {
-					masterData[v.Name()] = z.Bool
+					masterData.Set(v.Name(), z.Bool)
 					continue
 				}
 
 				if z, ok := (scanArgs[i]).(*sql.NullString); ok {
-					masterData[v.Name()] = z.String
+					masterData.Set(v.Name(), z.String)
 					continue
 				}
 
 				if z, ok := (scanArgs[i]).(*sql.NullInt64); ok {
-					masterData[v.Name()] = z.Int64
+					masterData.Set(v.Name(), z.Int64)
 					continue
 				}
 
 				if z, ok := (scanArgs[i]).(*sql.NullFloat64); ok {
-					masterData[v.Name()] = z.Float64
+					masterData.Set(v.Name(), z.Float64)
 					continue
 				}
 
 				if z, ok := (scanArgs[i]).(*sql.NullInt32); ok {
-					masterData[v.Name()] = z.Int32
+					masterData.Set(v.Name(), z.Int32)
 					continue
 				}
 
-				masterData[v.Name()] = scanArgs[i]
+				masterData.Set(v.Name(), scanArgs[i])
 			}
 
 			result = append(result, masterData)
 		}
-
-		// z, err := json.Marshal(finalRows)
 	}
 	return result
 }
@@ -437,7 +438,29 @@ func (a *application) getQueryDBFunc() func(call otto.FunctionCall) otto.Value {
 				arg, _ := call.Argument(i).Export()
 				arguments = append(arguments, arg)
 			}
-			result, _ = otto.New().ToValue(a.QueryDB(query, arguments))
+			rows := a.QueryDB(query, arguments)
+			var out bytes.Buffer
+			out.WriteRune('[')
+			for idx, row := range rows {
+				out.WriteRune('{')
+				i := 1
+				for el := row.Front(); el != nil; el = el.Next() {
+					out.WriteString(strconv.Quote(fmt.Sprintf("%s", el.Key)))
+					out.WriteRune(':')
+					v, _ := json.Marshal(el.Value)
+					out.WriteString(string(v))
+					if i < row.Len() {
+						out.WriteRune(',')
+					}
+					i++
+				}
+				out.WriteRune('}')
+				if idx+1 < len(rows) {
+					out.WriteRune(',')
+				}
+			}
+			out.WriteRune(']')
+			result, _ = otto.ToValue(out.String())
 		}
 
 		return result
