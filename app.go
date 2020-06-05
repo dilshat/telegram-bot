@@ -330,6 +330,8 @@ func (a *application) createVmTemplate() Vm {
 
 	vm.Set("sleep", a.getSleepFunc())
 
+	vm.Set("env", a.getEnvFunc())
+
 	vm.Set("send", a.getSendFunc(""))
 
 	vm.Set("prompt", a.getPromptFunc(""))
@@ -480,6 +482,18 @@ func (a *application) getExecDBFunc() func(call otto.FunctionCall) otto.Value {
 			var id int64
 			id = a.ExecDB(query, arguments)
 			result, _ = otto.ToValue(id)
+		}
+
+		return result
+	}
+}
+
+func (a *application) getEnvFunc() func(call otto.FunctionCall) otto.Value {
+	return func(call otto.FunctionCall) otto.Value {
+		result := otto.Value{}
+
+		if env, err := call.Argument(0).ToString(); err == nil {
+			result, _ = otto.ToValue(os.Getenv(env))
 		}
 
 		return result
