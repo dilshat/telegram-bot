@@ -15,8 +15,13 @@ bot = {
 
 function process(message, callback) {
 
+    var adminID = env('ADMIN_ID') //get admin telegram id from wnvironment variable
     var userID = getUserID(message, callback)
     var userName = getUserName(message, callback)
+
+    if (userID == adminID) {
+        send("Hello admin!")
+    }
 
     var step = get("step")
     if (!step) {
