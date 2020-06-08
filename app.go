@@ -220,18 +220,17 @@ func (a *application) QueryDB(query string, args []interface{}) []*orderedmap.Or
 	return result
 }
 
-func (a *application) ExecDB(query string, args []interface{}) int64 {
+func (a *application) ExecDB(query string, args []interface{}) sql.Result {
 	if a.dbClient != nil {
 		res, err := a.dbClient.Exec(query, args...)
 		if err != nil {
 			log.Error("Error executing db query ", err)
 		} else {
-			id, _ := res.LastInsertId()
-
-			return id
+			return res
 		}
 	}
-	return 0
+
+	return nil
 }
 
 func (a *application) initialize() error {
@@ -479,9 +478,13 @@ func (a *application) getExecDBFunc() func(call otto.FunctionCall) otto.Value {
 				arg, _ := call.Argument(i).Export()
 				arguments = append(arguments, arg)
 			}
-			var id int64
-			id = a.ExecDB(query, arguments)
-			result, _ = otto.ToValue(id)
+			res := a.ExecDB(query, arguments)
+
+			if res != nil {
+				lastInsertId, _ := res.LastInsertId()
+				rowsAffected, _ := res.RowsAffected()
+				result, _ = otto.ToValue(fmt.Sprintf("{ \"lastInsertId\" : \"%d\", \"rowsAffected\" : \"%d\"}", lastInsertId, rowsAffected))
+			}
 		}
 
 		return result
