@@ -13,7 +13,9 @@ bot = {
 }
 
 function process(message) {
-  //dbExec("insert into users(name, phone, birth_date) values($1,$2,$3)", 'James Bond', '996777123456', '1981-04-25')
+  //var res = bExec("insert into users(name, phone, birth_date) values($1,$2,$3)", 'James Bond', '996777123456', '1981-04-25')
+  //var result = JSON.parse(res)
+  //console.log(result.lastInsertId) // valid only for mysql db
   
   var res = dbExec("update users set name=$1 where id=$2", 'Jason Bourne', 1)
   var result = JSON.parse(res)
