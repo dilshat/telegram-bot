@@ -111,3 +111,9 @@ if (message.ReplyToMessage) {
 + Implement logic in `scripts/*.js` files
 + In file `.env` set TELEGRAM_TOKEN to your bot token and SCRIPTS to your scripts
 + Build bot `go build` and run `./telegram-bot`
+
+### Run in Docker:
+
++ Implement logic in `scripts/*.js` files
++ In docker-compose.yml, set TELEGRAM_TOKEN to your bot token and SCRIPTS to your scripts
++ Run docker using `docker-compose up -d`

@@ -1,0 +1,15 @@
+version: "3.3"
+
+services:
+
+  bot:
+    container_name: bot
+    build:
+      context: . # Use an image built from the specified dockerfile in the current directory.
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      - TELEGRAM_TOKEN=*
+      - SCRIPTS=scripts/sample.js,scripts/lib.js
+      - CACHE_TTL=8h
+
