@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -981,20 +982,30 @@ func buildInlineOptions(inlineOptions []map[string]interface{}) *tbot.InlineKeyb
 	keyboard := make([][]tbot.InlineKeyboardButton, len(inlineOptions))
 
 	for i := range inlineOptions {
-		keyboard[i] = make([]tbot.InlineKeyboardButton, len(inlineOptions[i]))
+		theMap := inlineOptions[i]
+
+		vals := make([]string, 0, len(theMap))
+		theReversedMap := map[string]string{}
+		for key, val := range theMap {
+			theValue := fmt.Sprintf("%s", val)
+			theReversedMap[theValue] = key
+			vals = append(vals, theValue)
+		}
+		sort.Strings(vals)
+
 		j := 0
-		for key, val := range inlineOptions[i] {
-			valStr := fmt.Sprintf("%s", val)
-			if isValidUrl(valStr) {
+		keyboard[i] = make([]tbot.InlineKeyboardButton, len(theMap))
+		for _, val := range vals {
+			if isValidUrl(val) {
 				button := tbot.InlineKeyboardButton{
-					Text: fmt.Sprintf("%s", key),
-					URL:  valStr,
+					Text: theReversedMap[val],
+					URL:  val,
 				}
 				keyboard[i][j] = button
 			} else {
 				button := tbot.InlineKeyboardButton{
-					Text:         fmt.Sprintf("%s", key),
-					CallbackData: valStr,
+					Text:         theReversedMap[val],
+					CallbackData: val,
 				}
 				keyboard[i][j] = button
 			}
